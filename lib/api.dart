@@ -110,7 +110,7 @@ Future<PlaylistResult> loadXtream(Profile p, String ua) async {
         epgId: _str(s['epg_channel_id']),
         categoryId: _str(s['category_id']),
         added: int.tryParse(_str(s['added'])) ?? 0,
-        num: int.tryParse(_str(s['num'])) ?? 0,
+        number: int.tryParse(_str(s['num'])) ?? 0,
       ));
     }
   }
@@ -183,7 +183,7 @@ PlaylistResult parseM3u(String text) {
       logo: a['tvg-logo'] ?? '',
       epgId: a['tvg-id'] ?? '',
       categoryId: g,
-      num: channels.length + 1,
+      number: channels.length + 1,
       url: url,
     ));
   }

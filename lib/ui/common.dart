@@ -201,7 +201,7 @@ void showProgrammeDetails(BuildContext context, Channel c, Programme p,
           FilledButton.icon(
             onPressed: () {
               Navigator.pop(ctx);
-              onWatch!();
+              onWatch();
             },
             icon: const Icon(Icons.play_arrow),
             label: const Text('Watch channel'),
@@ -262,7 +262,7 @@ void showChannelGuide(BuildContext context, Channel c, {VoidCallback? onWatch}) 
             FilledButton.icon(
               onPressed: () {
                 Navigator.pop(ctx);
-                onWatch!();
+                onWatch();
               },
               icon: const Icon(Icons.play_arrow),
               label: const Text('Watch'),

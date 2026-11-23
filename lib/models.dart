@@ -126,7 +126,7 @@ class Channel {
     this.epgId = '',
     this.categoryId = '',
     this.added = 0,
-    this.num = 0,
+    this.number = 0,
     this.url = '',
   });
 
@@ -137,7 +137,7 @@ class Channel {
   final String epgId;
   final String categoryId;
   final int added;
-  final int num;
+  final int number;
 
   /// Direct URL (M3U only). Xtream URLs are built at play time.
   final String url;
@@ -149,7 +149,7 @@ class Channel {
         'e': epgId,
         'c': categoryId,
         'a': added,
-        'o': num,
+        'o': number,
         'u': url,
       };
 
@@ -160,7 +160,7 @@ class Channel {
         epgId: j['e'] as String? ?? '',
         categoryId: j['c'] as String? ?? '',
         added: (j['a'] as num?)?.toInt() ?? 0,
-        num: (j['o'] as num?)?.toInt() ?? 0,
+        number: (j['o'] as num?)?.toInt() ?? 0,
         url: j['u'] as String? ?? '',
       );
 }
@@ -192,6 +192,8 @@ const epgFrequencies = <int, String>{
 };
 
 class Settings {
+  Settings();
+
   bool epgEnabled = true;
   int epgRefreshHours = 24;
   int epgTimeShiftHours = 0;
