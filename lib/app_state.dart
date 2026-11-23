@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'api.dart';
 import 'epg.dart';
 import 'models.dart';
+import 'secure_store.dart';
 import 'storage.dart';
 
 /// Single app-wide state object. Widgets listen with ListenableBuilder.
@@ -60,7 +61,14 @@ class AppState extends ChangeNotifier {
       }
       activeId = j['active'] as String?;
     }
+    // Login details live in the OS-encrypted store. Older versions kept them
+    // in state.json: those are migrated by the save() below.
+    for (final p in profiles) {
+      final sec = await SecretStore.read(p.id);
+      if (sec != null) p.applySecrets(sec);
+    }
     if (active == null && profiles.isNotEmpty) activeId = profiles.first.id;
+    await save();
     await _loadActiveCaches();
 
     // The scheduler. This is what fixes the "auto refresh never happens" bug:
@@ -106,11 +114,20 @@ class AppState extends ChangeNotifier {
     epg = _epgRaw.shifted(settings.epgTimeShiftHours * 3600000);
   }
 
-  Future<void> save() => Store.writeJson('state.json', {
-        'settings': settings.toJson(),
-        'profiles': [for (final p in profiles) p.toJson()],
-        'active': activeId,
-      });
+  Future<void> save() async {
+    final secured = <String>{};
+    for (final p in profiles) {
+      if (await SecretStore.write(p.id, p.secrets)) secured.add(p.id);
+    }
+    await Store.writeJson('state.json', {
+      'settings': settings.toJson(),
+      // Login fields only go to the plain file if the secure store failed.
+      'profiles': [
+        for (final p in profiles) p.toJson(includeSecrets: !secured.contains(p.id))
+      ],
+      'active': activeId,
+    });
+  }
 
   // -------------------------------------------------------------- scheduler
 
@@ -275,6 +292,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> deleteProfile(Profile p) async {
     profiles.removeWhere((x) => x.id == p.id);
+    await SecretStore.delete(p.id);
     await Store.delete('channels_${p.id}.json');
     await Store.delete('epg_${p.id}.json');
     if (activeId == p.id) {

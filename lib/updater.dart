@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:open_filex/open_filex.dart';
@@ -19,7 +20,12 @@ const String _repo = '3obmarino/live-iptv-player';
 const bool kTvBuild = bool.fromEnvironment('TV', defaultValue: false);
 
 class UpdateInfo {
-  UpdateInfo(this.build, this.version, this.windowsUrl, this.apkUrl, this.pageUrl);
+  UpdateInfo(this.build, this.version, this.windowsUrl, this.apkUrl, this.pageUrl,
+      {this.sha256 = const {}, this.sumsUrl});
+  /// download URL -> expected lowercase hex SHA-256 (from GitHub's asset digest)
+  final Map<String, String> sha256;
+  /// SHA256SUMS.txt in the release (fallback when GitHub gives no digest)
+  final String? sumsUrl;
   final int build;
   final String version;
   final String? windowsUrl;
@@ -66,10 +72,17 @@ class Updater extends ChangeNotifier {
       }
       String? win;
       String? apk;
+      String? sums;
+      final digests = <String, String>{};
       for (final a in (j['assets'] as List? ?? const [])) {
         if (a is! Map) continue;
         final name = a['name'] as String? ?? '';
         final url = a['browser_download_url'] as String?;
+        final digest = a['digest'] as String?;
+        if (url != null && digest != null && digest.startsWith('sha256:')) {
+          digests[url] = digest.substring(7).toLowerCase();
+        }
+        if (name == 'SHA256SUMS.txt') sums = url;
         if (name.toLowerCase().endsWith('.exe')) win = url;
         final lower = name.toLowerCase();
         final isTvApk = lower.contains('-tv');
@@ -77,7 +90,8 @@ class Updater extends ChangeNotifier {
       }
       final isNew = available?.build != b;
       available = UpdateInfo(b, tag.startsWith('v') ? tag.substring(1) : tag, win, apk,
-          j['html_url'] as String? ?? 'https://github.com/$_repo/releases/latest');
+          j['html_url'] as String? ?? 'https://github.com/$_repo/releases/latest',
+          sha256: digests, sumsUrl: sums);
       if (isNew) dismissed = false;
       notifyListeners();
       return available;
@@ -116,6 +130,7 @@ class Updater extends ChangeNotifier {
       final ext = Platform.isWindows ? 'exe' : 'apk';
       final file = File('${dir.path}${Platform.pathSeparator}LiveTV-update-${u.version}.$ext');
       await _download(url, file);
+      await _verify(u, url, file);
       if (Platform.isWindows) {
         await Process.start(
           file.path,
@@ -134,6 +149,31 @@ class Updater extends ChangeNotifier {
       progress = null;
       error = describeError(e);
       notifyListeners();
+    }
+  }
+
+  /// Refuses to install unless the file's SHA-256 matches what the release
+  /// says. Protects against broken or tampered downloads.
+  Future<void> _verify(UpdateInfo u, String url, File file) async {
+    var expected = u.sha256[url];
+    if (expected == null && u.sumsUrl != null) {
+      final r = await http.get(Uri.parse(u.sumsUrl!)).timeout(const Duration(seconds: 30));
+      if (r.statusCode == 200) {
+        final name = Uri.parse(url).pathSegments.last;
+        for (final line in const LineSplitter().convert(r.body)) {
+          final parts = line.trim().split(RegExp(r'\s+\*?'));
+          if (parts.length >= 2 && parts.last == name) expected = parts.first.toLowerCase();
+        }
+      }
+    }
+    if (expected == null) {
+      await file.delete().catchError((_) => file);
+      throw Exception('Could not verify the update (no checksum published)');
+    }
+    final actual = (await sha256.bind(file.openRead()).first).toString();
+    if (actual != expected) {
+      await file.delete().catchError((_) => file);
+      throw Exception('The downloaded update failed verification and was deleted');
     }
   }
 

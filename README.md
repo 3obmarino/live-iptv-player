@@ -49,6 +49,18 @@ flutter pub get
 flutter run -d windows        # or: flutter build windows --release
 ```
 
+## Privacy & security
+- Your IPTV login (username, password, playlist and EPG URLs) is stored only on
+  your own device, encrypted by the operating system (Windows DPAPI, Android
+  Keystore). It is never in this repository and never sent anywhere except to
+  your provider. Android cloud backup is disabled.
+- Updates are only installed after their SHA-256 matches the checksum GitHub
+  publishes for the release.
+- The Android signing key is a repository secret (`ANDROID_KEYSTORE_B64`,
+  base64 of the keystore), not a file in the repo.
+- GitHub Actions are pinned to commit SHAs; the workflow token is read-only
+  except for the release step.
+
 ## Data
-Settings, profiles, channel lists and the cached guide are stored in
+Settings, profile names, channel lists and the cached guide are stored in
 `%APPDATA%\dk.livetvplayer\live_tv_player\` (JSON files).

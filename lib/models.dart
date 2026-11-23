@@ -64,16 +64,30 @@ class Profile {
   String get effectiveEpgUrl =>
       customEpgUrl.trim().isNotEmpty ? customEpgUrl.trim() : defaultEpgUrl;
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'type': type.name,
-        'server': server,
+  /// Fields kept in the encrypted store, not in the plain settings file.
+  Map<String, String> get secrets => {
         'username': username,
         'password': password,
         'm3uUrl': m3uUrl,
         'customEpgUrl': customEpgUrl,
         'playlistEpgUrl': playlistEpgUrl,
+      };
+
+  void applySecrets(Map<String, String> m) {
+    username = m['username'] ?? username;
+    password = m['password'] ?? password;
+    m3uUrl = m['m3uUrl'] ?? m3uUrl;
+    customEpgUrl = m['customEpgUrl'] ?? customEpgUrl;
+    playlistEpgUrl = m['playlistEpgUrl'] ?? playlistEpgUrl;
+  }
+
+
+  Map<String, dynamic> toJson({bool includeSecrets = true}) => {
+        'id': id,
+        'name': name,
+        'type': type.name,
+        'server': server,
+        if (includeSecrets) ...secrets,
         'expDate': expDate?.millisecondsSinceEpoch,
         'channelsUpdated': channelsUpdated?.millisecondsSinceEpoch,
         'epgUpdated': epgUpdated?.millisecondsSinceEpoch,
