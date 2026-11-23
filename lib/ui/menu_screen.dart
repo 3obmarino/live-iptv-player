@@ -1,0 +1,146 @@
+import 'package:flutter/material.dart';
+
+import '../app_state.dart';
+import '../models.dart';
+import 'common.dart';
+import 'epg_settings_screen.dart';
+import 'player_settings_screen.dart';
+import 'profiles_screen.dart';
+
+class MenuScreen extends StatelessWidget {
+  const MenuScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: AppState.I,
+      builder: (context, _) {
+        final s = AppState.I;
+        final p = s.active;
+        final cs = Theme.of(context).colorScheme;
+        final t = Theme.of(context).textTheme;
+
+        String playlistSub() {
+          if (s.loadingChannels) return 'Updating channel list…';
+          final parts = <String>['${s.channels.length} channels'];
+          if (p?.channelsUpdated != null) parts.add('updated ${fmtDateTime(p!.channelsUpdated!)}');
+          var out = parts.join(' · ');
+          if (s.channelsError != null) out += '\nLast update failed: ${s.channelsError}';
+          return out;
+        }
+
+        String epgSub() {
+          if (!s.settings.epgEnabled) return 'Disabled';
+          if (s.epgLoading) return 'Updating TV guide…';
+          final last = p?.epgUpdated;
+          return '${epgFrequencies[s.settings.epgRefreshHours] ?? ''}'
+              '${last == null ? '' : ' · last ${fmtDateTime(last)}'}';
+        }
+
+        Widget item(IconData icon, String title, String? sub, VoidCallback onTap) => Column(
+              children: [
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  leading: Icon(icon),
+                  title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+                  subtitle: sub == null ? null : Text(sub),
+                  trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+                  onTap: onTap,
+                ),
+                const Divider(),
+              ],
+            );
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 320,
+              color: cs.surfaceContainerLow,
+              padding: const EdgeInsets.fromLTRB(36, 48, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 36,
+                    backgroundColor: kAccent,
+                    child: Text(
+                      (p?.name.isNotEmpty ?? false) ? p!.name.substring(0, 1).toUpperCase() : '?',
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(p?.name ?? 'No profile',
+                      style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                  if (p != null)
+                    Text(p.host, style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                  if (p?.expDate != null)
+                    Text('Expires ${fmtDate(p!.expDate!)}',
+                        style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                  const SizedBox(height: 20),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(builder: (_) => const ProfilesScreen())),
+                    icon: const Icon(Icons.manage_accounts_outlined, size: 18),
+                    label: const Text('Manage profiles'),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(48, 44, 48, 24),
+                children: [
+                  Text('Menu', style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 24),
+                  item(Icons.playlist_play_rounded, 'Playlist', playlistSub(), () async {
+                    if (p == null) return;
+                    final err = await s.refreshChannels(p);
+                    if (context.mounted) toast(context, err ?? 'Channel list updated');
+                  }),
+                  item(Icons.play_circle_outline_rounded, 'Video player settings', null,
+                      () => Navigator.of(context).push(MaterialPageRoute<void>(
+                          builder: (_) => const PlayerSettingsScreen()))),
+                  item(Icons.calendar_view_week_rounded, 'EPG', epgSub(),
+                      () => Navigator.of(context).push(MaterialPageRoute<void>(
+                          builder: (_) => const EpgSettingsScreen()))),
+                  item(Icons.dark_mode_outlined, 'Theme', _themeLabel(s.settings.themeMode),
+                      () => _pickTheme(context)),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  static String _themeLabel(String m) =>
+      switch (m) { 'light' => 'Light', 'dark' => 'Dark', _ => 'Follow Windows' };
+
+  Future<void> _pickTheme(BuildContext context) async {
+    final s = AppState.I;
+    final v = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Theme'),
+        children: [
+          for (final m in const ['system', 'light', 'dark'])
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, m),
+              child: Row(children: [
+                Icon(s.settings.themeMode == m
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                    color: s.settings.themeMode == m ? kAccent : null, size: 20),
+                const SizedBox(width: 12),
+                Text(_themeLabel(m)),
+              ]),
+            ),
+        ],
+      ),
+    );
+    if (v != null) await s.updateSettings((x) => x.themeMode = v);
+  }
+}

@@ -1,0 +1,312 @@
+import 'package:flutter/material.dart';
+
+import '../app_state.dart';
+import '../models.dart';
+import 'common.dart';
+
+class ProfilesScreen extends StatelessWidget {
+  const ProfilesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: AppState.I,
+      builder: (context, _) {
+        final s = AppState.I;
+        final cs = Theme.of(context).colorScheme;
+        final canPop = Navigator.of(context).canPop();
+        return Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: canPop,
+            title: const Text('Profiles'),
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            backgroundColor: kAccent,
+            foregroundColor: Colors.white,
+            onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const EditProfileScreen())),
+            icon: const Icon(Icons.add),
+            label: const Text('Add profile'),
+          ),
+          body: s.profiles.isEmpty
+              ? Center(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.live_tv_rounded, size: 56, color: cs.onSurfaceVariant),
+                    const SizedBox(height: 16),
+                    const Text('Add your IPTV provider to get started',
+                        style: TextStyle(fontSize: 16)),
+                  ]),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [for (final p in s.profiles) _ProfileCard(p)],
+                  ),
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard(this.p);
+  final Profile p;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppState.I;
+    final cs = Theme.of(context).colorScheme;
+    final isActive = s.activeId == p.id;
+    return SizedBox(
+      width: 360,
+      child: Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: isActive ? kAccent : cs.outlineVariant, width: isActive ? 1.5 : 1),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () async {
+            await s.setActive(p);
+            if (context.mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
+          },
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 4, 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  backgroundColor: kAccent,
+                  child: Text(p.name.isEmpty ? '?' : p.name.substring(0, 1).toUpperCase(),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(p.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      Text('${p.isXtream ? 'Xtream Codes' : 'M3U'} · ${p.host}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
+                      const SizedBox(height: 6),
+                      Row(children: [
+                        Icon(Icons.schedule, size: 14, color: cs.onSurfaceVariant),
+                        const SizedBox(width: 4),
+                        Text(
+                            p.channelsUpdated == null
+                                ? 'Not loaded yet'
+                                : fmtDateTime(p.channelsUpdated!),
+                            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12.5)),
+                      ]),
+                      if (isActive)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 6),
+                          child: Text('Active',
+                              style: TextStyle(color: kAccent, fontWeight: FontWeight.w600, fontSize: 12.5)),
+                        ),
+                    ],
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (v) => _action(context, v),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'refresh', child: Text('Refresh')),
+                    PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _action(BuildContext context, String v) async {
+    final s = AppState.I;
+    if (v == 'edit') {
+      Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => EditProfileScreen(existing: p)));
+    } else if (v == 'refresh') {
+      var err = await s.refreshChannels(p);
+      if (err == null && s.activeId == p.id) err = await s.refreshEpg();
+      if (context.mounted) toast(context, err ?? 'Profile refreshed');
+    } else if (v == 'delete') {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('Delete "${p.name}"?'),
+          content: const Text('Its channel list, TV guide and favourites are removed from this PC.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+          ],
+        ),
+      );
+      if (ok == true) await s.deleteProfile(p);
+    }
+  }
+}
+
+class EditProfileScreen extends StatefulWidget {
+  const EditProfileScreen({super.key, this.existing});
+  final Profile? existing;
+  @override
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  late ProfileType _type = widget.existing?.type ?? ProfileType.xtream;
+  late final _name = TextEditingController(text: widget.existing?.name ?? '');
+  late final _server = TextEditingController(text: widget.existing?.server ?? '');
+  late final _user = TextEditingController(text: widget.existing?.username ?? '');
+  late final _pass = TextEditingController(text: widget.existing?.password ?? '');
+  late final _m3u = TextEditingController(text: widget.existing?.m3uUrl ?? '');
+  bool _busy = false;
+  bool _hidePass = true;
+  String? _err;
+
+  @override
+  void dispose() {
+    for (final c in [_name, _server, _user, _pass, _m3u]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final xt = _type == ProfileType.xtream;
+    if (xt && (_server.text.trim().isEmpty || _user.text.trim().isEmpty || _pass.text.trim().isEmpty)) {
+      setState(() => _err = 'Server, username and password are required.');
+      return;
+    }
+    if (!xt && _m3u.text.trim().isEmpty) {
+      setState(() => _err = 'The playlist URL is required.');
+      return;
+    }
+    setState(() {
+      _err = null;
+      _busy = true;
+    });
+    final e = widget.existing;
+    final p = Profile(
+      id: e?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+      name: '',
+      type: _type,
+      server: normalizeServerInput(_server.text),
+      username: _user.text.trim(),
+      password: _pass.text.trim(),
+      m3uUrl: _m3u.text.trim(),
+      customEpgUrl: e?.customEpgUrl ?? '',
+      playlistEpgUrl: e?.playlistEpgUrl ?? '',
+      expDate: e?.expDate,
+      channelsUpdated: e?.channelsUpdated,
+      epgUpdated: e?.epgUpdated,
+      favorites: e?.favorites,
+      favoriteCategories: e?.favoriteCategories,
+      recents: e?.recents,
+    );
+    p.name = _name.text.trim().isEmpty ? p.host : _name.text.trim();
+
+    final s = AppState.I;
+    await s.addOrUpdateProfile(p);
+    final err = await s.refreshChannels(p);
+    if (!mounted) return;
+    if (err != null) {
+      setState(() {
+        _busy = false;
+        _err = 'Saved, but the channel list could not be loaded:\n$err';
+      });
+      return;
+    }
+    if (s.activeId == p.id) {
+      p.epgUpdated = null; // credentials may have changed: fetch a fresh guide
+      s.refreshEpg();
+    }
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final xt = _type == ProfileType.xtream;
+    final cs = Theme.of(context).colorScheme;
+    InputDecoration dec(String label, [String? hint]) =>
+        InputDecoration(labelText: label, hintText: hint);
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.existing == null ? 'Add profile' : 'Edit profile')),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SegmentedButton<ProfileType>(
+                  showSelectedIcon: false,
+                  segments: const [
+                    ButtonSegment(value: ProfileType.xtream, label: Text('Xtream Codes')),
+                    ButtonSegment(value: ProfileType.m3u, label: Text('M3U / M3U8 playlist')),
+                  ],
+                  selected: {_type},
+                  onSelectionChanged: (v) => setState(() => _type = v.first),
+                ),
+                const SizedBox(height: 24),
+                TextField(controller: _name, decoration: dec('Name', 'e.g. Home')),
+                const SizedBox(height: 14),
+                if (xt) ...[
+                  TextField(
+                      controller: _server,
+                      decoration: dec('Server URL', 'http://example.com:8080')),
+                  const SizedBox(height: 14),
+                  TextField(controller: _user, decoration: dec('Username')),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _pass,
+                    obscureText: _hidePass,
+                    decoration: dec('Password').copyWith(
+                      suffixIcon: IconButton(
+                        icon: Icon(_hidePass ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                        onPressed: () => setState(() => _hidePass = !_hidePass),
+                      ),
+                    ),
+                  ),
+                ] else
+                  TextField(controller: _m3u, decoration: dec('M3U / M3U8 URL')),
+                if (_err != null) ...[
+                  const SizedBox(height: 16),
+                  Text(_err!, style: TextStyle(color: cs.error)),
+                ],
+                const SizedBox(height: 28),
+                FilledButton(
+                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                  onPressed: _busy ? null : _save,
+                  child: _busy
+                      ? const SizedBox(
+                          width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Text(widget.existing == null ? 'Add profile' : 'Save'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Re-exported here so the UI does not import api.dart just for this.
+String normalizeServerInput(String s) {
+  var v = s.trim();
+  if (v.isEmpty) return v;
+  if (!v.contains('://')) v = 'http://$v';
+  final u = Uri.tryParse(v);
+  if (u == null || u.host.isEmpty) return v;
+  return Uri(scheme: u.scheme, host: u.host, port: u.hasPort ? u.port : null).toString();
+}

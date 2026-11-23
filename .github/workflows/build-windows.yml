@@ -1,0 +1,70 @@
+name: Build Windows installer
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.24.5'
+          cache: true
+
+      # The repo only holds lib/ + pubspec; generate the Windows runner once.
+      - name: Generate Windows runner
+        shell: pwsh
+        run: |
+          if (-not (Test-Path windows)) {
+            flutter create --platforms=windows --project-name live_tv_player --org dk.livetvplayer .
+          }
+
+      - run: flutter pub get
+
+      - name: Analyze (informational)
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        continue-on-error: true
+
+      - name: Unit tests
+        run: flutter test
+
+      - name: Build
+        run: flutter build windows --release
+
+      - name: Bundle VC++ runtime (so it runs on a clean PC)
+        shell: pwsh
+        run: |
+          $dst = "build\windows\x64\runner\Release"
+          foreach ($f in "msvcp140.dll","vcruntime140.dll","vcruntime140_1.dll") {
+            Copy-Item "$env:WINDIR\System32\$f" $dst -ErrorAction SilentlyContinue
+          }
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DMyAppVersion=1.0.${{ github.run_number }}" installer\setup.iss
+
+      - name: Portable zip
+        shell: pwsh
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath dist\LiveTVPlayer-portable.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LiveTVPlayer-Windows
+          path: dist/*
+
+      - name: Attach to GitHub release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
