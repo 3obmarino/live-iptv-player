@@ -9,6 +9,7 @@ import 'ui/common.dart';
 import 'ui/live_screen.dart';
 import 'ui/menu_screen.dart';
 import 'ui/profiles_screen.dart';
+import 'tv/tv_home.dart';
 import 'updater.dart';
 
 const appTitle = 'Live TV Player';
@@ -38,7 +39,7 @@ class TvApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: buildTheme(Brightness.light),
         darkTheme: buildTheme(Brightness.dark),
-        themeMode: AppState.I.themeMode,
+        themeMode: kTvBuild ? ThemeMode.dark : AppState.I.themeMode,
         scrollBehavior: const AppScrollBehavior(),
         home: const RootGate(),
       ),
@@ -54,7 +55,9 @@ class RootGate extends StatelessWidget {
     return ListenableBuilder(
       listenable: AppState.I,
       builder: (_, __) =>
-          AppState.I.active == null ? const ProfilesScreen() : const HomeShell(),
+          AppState.I.active == null
+              ? const ProfilesScreen()
+              : (kTvBuild ? const TvHome() : const HomeShell()),
     );
   }
 }
@@ -178,7 +181,7 @@ class UpdateBar extends StatelessWidget {
                 const SizedBox(width: 4),
                 FilledButton(
                   onPressed: u.install,
-                  child: Text(Platform.isAndroid ? 'Download' : 'Install'),
+                  child: const Text('Install'),
                 ),
               ],
             ]),
