@@ -186,7 +186,7 @@ jobs:
           body: |
             Windows: download LiveTVPlayer-Setup-1.0.${{ github.run_number }}.exe (or use "Install" in the app).
             Android phone: download LiveTV-1.0.${{ github.run_number }}-arm64.apk on the phone.
-            Google TV: in the Downloader app open https://github.com/3obmarino/live-iptv-player/releases/latest/download/LiveTV-TV.apk
+            Google TV: in the Downloader app enter code 8371457
 
             Changes: ${{ github.event.head_commit.message }}
           files: dist/*

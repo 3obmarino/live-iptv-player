@@ -1,7 +1,20 @@
 # Live TV Player
 
-A small, clean IPTV player for Windows: **Live TV + TV guide (EPG) only**.
+A small, clean IPTV player: **Live TV + TV guide (EPG) only**, for
+Windows, Android phones and Google TV.
 Flutter UI, libmpv playback (via media_kit), Xtream Codes and M3U playlists.
+
+## Install
+
+| Device | How |
+|---|---|
+| **Google TV / Android TV** | In the **Downloader** app enter code **`8371457`** |
+| Windows | `LiveTVPlayer-Setup-….exe` from [latest release](https://github.com/3obmarino/live-iptv-player/releases/latest) |
+| Android phone | `LiveTV-…-arm64.apk` from [latest release](https://github.com/3obmarino/live-iptv-player/releases/latest) |
+
+The Downloader code always points to the newest TV version:
+`https://github.com/3obmarino/live-iptv-player/releases/latest/download/LiveTV-TV.apk`.
+After the first install, every app updates itself (Menu/Settings › Check for updates).
 
 ## What it does
 - Profiles: Xtream Codes (server / username / password) or M3U URL
