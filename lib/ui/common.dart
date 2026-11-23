@@ -4,7 +4,16 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../models.dart';
 
-const kAccent = Color(0xFFE5195E);
+/// "Matrix" green. Bright on dark surfaces; a deeper green on light ones
+/// so text and icons stay readable. Text on top of kAccent uses kOnAccent.
+const kAccent = Color(0xFF00FF41);
+const kAccentDeep = Color(0xFF00802B);
+const kOnAccent = Color(0xFF00170A);
+
+Color accentOf(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark ? kAccent : kAccentDeep;
+Color onAccentOf(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark ? kOnAccent : Colors.white;
 
 // ------------------------------------------------------------------ theme
 
@@ -20,12 +29,13 @@ ThemeData buildTheme(Brightness b) {
   final line = dark ? const Color(0xFF2A2A30) : const Color(0xFFE4E4E8);
   final text = dark ? const Color(0xFFF2F2F4) : const Color(0xFF16161A);
   final muted = dark ? const Color(0xFF9A9AA3) : const Color(0xFF6B6B75);
+  final accent = dark ? kAccent : kAccentDeep;
 
   final scheme = ColorScheme.fromSeed(
-    seedColor: kAccent,
+    seedColor: accent,
     brightness: b,
-    primary: kAccent,
-    onPrimary: Colors.white,
+    primary: accent,
+    onPrimary: dark ? kOnAccent : Colors.white,
     surface: surface,
     onSurface: text,
     onSurfaceVariant: muted,
@@ -66,15 +76,15 @@ ThemeData buildTheme(Brightness b) {
           borderSide: BorderSide(color: line)),
       focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: kAccent, width: 1.5)),
+          borderSide: BorderSide(color: accent, width: 1.5)),
     ),
     navigationRailTheme: NavigationRailThemeData(
       backgroundColor: bg,
-      indicatorColor: kAccent.withOpacity(0.12),
-      selectedIconTheme: const IconThemeData(color: kAccent),
+      indicatorColor: accent.withOpacity(0.14),
+      selectedIconTheme: IconThemeData(color: accent),
       unselectedIconTheme: IconThemeData(color: muted),
-      selectedLabelTextStyle: const TextStyle(
-          color: kAccent, fontWeight: FontWeight.w600, fontSize: 12),
+      selectedLabelTextStyle: TextStyle(
+          color: accent, fontWeight: FontWeight.w600, fontSize: 12),
       unselectedLabelTextStyle: TextStyle(color: muted, fontSize: 12),
     ),
     tooltipTheme: const TooltipThemeData(waitDuration: Duration(milliseconds: 500)),
@@ -240,7 +250,7 @@ void showChannelGuide(BuildContext context, Channel c, {VoidCallback? onWatch}) 
                       title: Text(p.title,
                           style: TextStyle(
                               fontWeight: live ? FontWeight.w700 : FontWeight.w500,
-                              color: live ? kAccent : null)),
+                              color: live ? accentOf(ctx) : null)),
                       subtitle: p.desc.isEmpty
                           ? null
                           : Text(p.desc, maxLines: 2, overflow: TextOverflow.ellipsis),

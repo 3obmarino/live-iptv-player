@@ -51,7 +51,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           return Column(children: [
             ListTile(
               selected: sel,
-              selectedColor: kAccent,
+              selectedColor: accentOf(context),
               contentPadding: const EdgeInsets.symmetric(horizontal: 20),
               leading: icon == null ? null : Icon(icon, size: 20),
               title: Text(name,
@@ -63,7 +63,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   IconButton(
                     tooltip: fav ? 'Remove favourite category' : 'Favourite category',
                     icon: Icon(fav ? Icons.star_rounded : Icons.star_outline_rounded,
-                        color: fav ? kAccent : cs.onSurfaceVariant),
+                        color: fav ? accentOf(context) : cs.onSurfaceVariant),
                     onPressed: () => s.toggleFavoriteCategory(id),
                   )
                 else

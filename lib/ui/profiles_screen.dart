@@ -21,8 +21,8 @@ class ProfilesScreen extends StatelessWidget {
             title: const Text('Profiles'),
           ),
           floatingActionButton: FloatingActionButton.extended(
-            backgroundColor: kAccent,
-            foregroundColor: Colors.white,
+            backgroundColor: accentOf(context),
+            foregroundColor: onAccentOf(context),
             onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const EditProfileScreen())),
             icon: const Icon(Icons.add),
@@ -68,7 +68,7 @@ class _ProfileCard extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: isActive ? kAccent : cs.outlineVariant, width: isActive ? 1.5 : 1),
+          side: BorderSide(color: isActive ? accentOf(context) : cs.outlineVariant, width: isActive ? 1.5 : 1),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -82,9 +82,9 @@ class _ProfileCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CircleAvatar(
-                  backgroundColor: kAccent,
+                  backgroundColor: accentOf(context),
                   child: Text(p.name.isEmpty ? '?' : p.name.substring(0, 1).toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                      style: TextStyle(color: onAccentOf(context), fontWeight: FontWeight.w700)),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -107,10 +107,10 @@ class _ProfileCard extends StatelessWidget {
                             style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12.5)),
                       ]),
                       if (isActive)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 6),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
                           child: Text('Active',
-                              style: TextStyle(color: kAccent, fontWeight: FontWeight.w600, fontSize: 12.5)),
+                              style: TextStyle(color: accentOf(context), fontWeight: FontWeight.w600, fontSize: 12.5)),
                         ),
                     ],
                   ),

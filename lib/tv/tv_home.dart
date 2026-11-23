@@ -616,7 +616,7 @@ class _TvHomeState extends State<TvHome> {
                     ),
                     child: Row(children: [
                       if (icon != null) ...[
-                        Icon(icon, size: 20, color: sel ? Colors.white : Colors.white60),
+                        Icon(icon, size: 20, color: sel ? kOnAccent : Colors.white60),
                         const SizedBox(width: 10),
                       ],
                       Expanded(
@@ -624,7 +624,7 @@ class _TvHomeState extends State<TvHome> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                                color: sel || active ? Colors.white : Colors.white70,
+                                color: sel ? kOnAccent : active ? Colors.white : Colors.white70,
                                 fontSize: 16,
                                 fontWeight: sel || active ? FontWeight.w700 : FontWeight.w500)),
                       ),
@@ -688,7 +688,7 @@ class _TvHomeState extends State<TvHome> {
                             width: 38,
                             child: Text('${i + 1}',
                                 style: TextStyle(
-                                    color: sel ? Colors.white : Colors.white38, fontSize: 14)),
+                                    color: sel ? kOnAccent : Colors.white38, fontSize: 14)),
                           ),
                           ChannelLogo(c, size: 38),
                           const SizedBox(width: 14),
@@ -700,8 +700,8 @@ class _TvHomeState extends State<TvHome> {
                                 Text(c.name,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        color: Colors.white,
+                                    style: TextStyle(
+                                        color: sel ? kOnAccent : Colors.white,
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600)),
                                 if (cur != null) ...[
@@ -710,7 +710,7 @@ class _TvHomeState extends State<TvHome> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                          color: sel ? Colors.white : Colors.white54,
+                                          color: sel ? kOnAccent : Colors.white54,
                                           fontSize: 13)),
                                   const SizedBox(height: 4),
                                   ClipRRect(
@@ -718,8 +718,8 @@ class _TvHomeState extends State<TvHome> {
                                     child: LinearProgressIndicator(
                                       value: cur.progressAt(now),
                                       minHeight: 2.5,
-                                      color: sel ? Colors.white : kAccent,
-                                      backgroundColor: Colors.white12,
+                                      color: sel ? kOnAccent : kAccent,
+                                      backgroundColor: sel ? const Color(0x33000000) : Colors.white12,
                                     ),
                                   ),
                                 ],
@@ -730,13 +730,13 @@ class _TvHomeState extends State<TvHome> {
                             Padding(
                               padding: const EdgeInsets.only(left: 8),
                               child: Icon(Icons.star_rounded,
-                                  size: 18, color: sel ? Colors.white : kAccent),
+                                  size: 18, color: sel ? kOnAccent : kAccent),
                             ),
                           if (c.id == playingId)
                             Padding(
                               padding: const EdgeInsets.only(left: 8),
                               child: Icon(Icons.volume_up_rounded,
-                                  size: 18, color: sel ? Colors.white : kAccent),
+                                  size: 18, color: sel ? kOnAccent : kAccent),
                             ),
                         ]),
                       );

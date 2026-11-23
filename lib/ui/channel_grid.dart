@@ -84,7 +84,7 @@ class ChannelTile extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: cur.progressAt(now),
                           minHeight: 3,
-                          color: kAccent,
+                          color: accentOf(context),
                           backgroundColor: cs.surfaceContainerHighest,
                         ),
                       ),
@@ -95,7 +95,7 @@ class ChannelTile extends StatelessWidget {
               IconButton(
                 tooltip: fav ? 'Remove from favourites' : 'Add to favourites',
                 icon: Icon(fav ? Icons.star_rounded : Icons.star_outline_rounded,
-                    color: fav ? kAccent : cs.onSurfaceVariant),
+                    color: fav ? accentOf(context) : cs.onSurfaceVariant),
                 onPressed: () => s.toggleFavorite(channel),
               ),
               PopupMenuButton<String>(

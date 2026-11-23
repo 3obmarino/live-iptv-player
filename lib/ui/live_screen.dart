@@ -167,7 +167,7 @@ class _LiveScreenState extends State<LiveScreen> {
             borderSide: BorderSide(color: cs.outlineVariant)),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(24),
-            borderSide: const BorderSide(color: kAccent, width: 1.5)),
+            borderSide: BorderSide(color: accentOf(context), width: 1.5)),
         suffixIcon: _query.isEmpty
             ? null
             : IconButton(

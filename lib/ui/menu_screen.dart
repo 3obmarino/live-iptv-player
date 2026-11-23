@@ -56,11 +56,11 @@ class MenuScreen extends StatelessWidget {
         final profileInfo = <Widget>[
           CircleAvatar(
             radius: compact ? 28 : 36,
-            backgroundColor: kAccent,
+            backgroundColor: accentOf(context),
             child: Text(
               (p?.name.isNotEmpty ?? false) ? p!.name.substring(0, 1).toUpperCase() : '?',
               style: TextStyle(
-                  color: Colors.white, fontSize: compact ? 22 : 28, fontWeight: FontWeight.w700),
+                  color: onAccentOf(context), fontSize: compact ? 22 : 28, fontWeight: FontWeight.w700),
             ),
           ),
           SizedBox(height: compact ? 12 : 20),
@@ -170,7 +170,7 @@ class MenuScreen extends StatelessWidget {
                 Icon(s.settings.themeMode == m
                     ? Icons.radio_button_checked
                     : Icons.radio_button_unchecked,
-                    color: s.settings.themeMode == m ? kAccent : null, size: 20),
+                    color: s.settings.themeMode == m ? accentOf(ctx) : null, size: 20),
                 const SizedBox(width: 12),
                 Text(_themeLabel(m)),
               ]),

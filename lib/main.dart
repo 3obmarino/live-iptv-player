@@ -91,14 +91,14 @@ class _HomeShellState extends State<HomeShell> {
           height: 64,
           selectedIndex: _i,
           onDestinationSelected: (i) => setState(() => _i = i),
-          indicatorColor: kAccent.withOpacity(0.12),
-          destinations: const [
+          indicatorColor: accentOf(context).withOpacity(0.14),
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.live_tv_outlined),
-              selectedIcon: Icon(Icons.live_tv, color: kAccent),
+              icon: const Icon(Icons.live_tv_outlined),
+              selectedIcon: Icon(Icons.live_tv, color: accentOf(context)),
               label: 'TV Live',
             ),
-            NavigationDestination(icon: Icon(Icons.menu_rounded), label: 'Menu'),
+            const NavigationDestination(icon: Icon(Icons.menu_rounded), label: 'Menu'),
           ],
         ),
       );
@@ -155,11 +155,11 @@ class UpdateBar extends StatelessWidget {
         if (info == null || u.dismissed) return const SizedBox.shrink();
         final cs = Theme.of(context).colorScheme;
         return Material(
-          color: kAccent.withOpacity(0.10),
+          color: accentOf(context).withOpacity(0.10),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
             child: Row(children: [
-              const Icon(Icons.system_update_alt_rounded, color: kAccent, size: 20),
+              Icon(Icons.system_update_alt_rounded, color: accentOf(context), size: 20),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -174,7 +174,7 @@ class UpdateBar extends StatelessWidget {
               if (u.installing)
                 SizedBox(
                   width: 120,
-                  child: LinearProgressIndicator(value: u.progress, color: kAccent),
+                  child: LinearProgressIndicator(value: u.progress, color: accentOf(context)),
                 )
               else ...[
                 TextButton(onPressed: u.dismiss, child: const Text('Later')),

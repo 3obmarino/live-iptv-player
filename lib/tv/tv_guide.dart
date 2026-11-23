@@ -318,7 +318,7 @@ class TvGuideState extends State<TvGuide> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                   color: selected
-                      ? Colors.white
+                      ? kOnAccent
                       : past
                           ? Colors.white38
                           : Colors.white,
@@ -337,8 +337,8 @@ class TvGuideState extends State<TvGuide> {
             color: r == _row ? kAccent : const Color(0xFF18181C),
             borderRadius: BorderRadius.circular(6),
           ),
-          child: const Text('No information',
-              style: TextStyle(color: Colors.white54, fontSize: 14)),
+          child: Text('No information',
+              style: TextStyle(color: r == _row ? kOnAccent : Colors.white54, fontSize: 14)),
         ),
       ));
     }

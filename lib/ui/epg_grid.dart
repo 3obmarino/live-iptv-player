@@ -225,7 +225,7 @@ class _EpgGridState extends State<EpgGrid> {
       final past = p.stop <= now;
       final live = p.isLiveAt(now);
       final bg = live
-          ? kAccent.withOpacity(dark ? 0.28 : 0.12)
+          ? accentOf(context).withOpacity(dark ? 0.22 : 0.14)
           : past
               ? (dark ? const Color(0xFF1F1F24) : const Color(0xFFF3F3F5))
               : cs.surfaceContainerHighest;

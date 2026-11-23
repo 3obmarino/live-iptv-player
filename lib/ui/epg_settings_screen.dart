@@ -63,7 +63,7 @@ class _EpgSettingsScreenState extends State<EpgSettingsScreen> {
                 ListTile(
                   dense: true,
                   selected: s.settings.epgTimeShiftHours == h,
-                  selectedColor: kAccent,
+                  selectedColor: accentOf(ctx),
                   title: Text(h == 0 ? '0h (no shift)' : '${h > 0 ? '+' : ''}${h}h'),
                   onTap: () => Navigator.pop(ctx, h),
                 ),
@@ -185,7 +185,7 @@ class _FrequencyScreen extends StatelessWidget {
                 s.settings.epgRefreshHours == e.key
                     ? Icons.radio_button_checked
                     : Icons.radio_button_unchecked,
-                color: s.settings.epgRefreshHours == e.key ? kAccent : null,
+                color: s.settings.epgRefreshHours == e.key ? accentOf(context) : null,
               ),
               title: Text(e.value),
               onTap: () async {
