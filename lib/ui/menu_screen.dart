@@ -139,12 +139,8 @@ class MenuScreen extends StatelessWidget {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(48, 44, 48, 24),
-                children: [
-                  Text('Menu', style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 24),
-                  ...menuItems,
-                ],
+                padding: const EdgeInsets.fromLTRB(48, 24, 48, 24),
+                children: menuItems,
               ),
             ),
           ],

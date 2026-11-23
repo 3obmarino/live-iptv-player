@@ -7,7 +7,6 @@ import 'package:window_manager/window_manager.dart';
 import 'app_state.dart';
 import 'ui/common.dart';
 import 'ui/live_screen.dart';
-import 'ui/menu_screen.dart';
 import 'ui/profiles_screen.dart';
 import 'tv/tv_home.dart';
 import 'updater.dart';
@@ -69,73 +68,17 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> {
-  int _i = 0;
-
+  // We are always on Live TV: no navigation rail/bar. The Menu opens from
+  // the icon at the top right of the Live screen.
   @override
   Widget build(BuildContext context) {
-    if (isCompact(context)) {
-      return Scaffold(
-        body: SafeArea(
-          bottom: false,
-          child: Column(children: [
-            const UpdateBar(),
-            Expanded(
-              child: IndexedStack(
-                index: _i,
-                children: const [LiveScreen(), MenuScreen()],
-              ),
-            ),
-          ]),
-        ),
-        bottomNavigationBar: NavigationBar(
-          height: 64,
-          selectedIndex: _i,
-          onDestinationSelected: (i) => setState(() => _i = i),
-          indicatorColor: accentOf(context).withOpacity(0.14),
-          destinations: [
-            NavigationDestination(
-              icon: const Icon(Icons.live_tv_outlined),
-              selectedIcon: Icon(Icons.live_tv, color: accentOf(context)),
-              label: 'TV Live',
-            ),
-            const NavigationDestination(icon: Icon(Icons.menu_rounded), label: 'Menu'),
-          ],
-        ),
-      );
-    }
-    return Scaffold(
-      body: Row(
-        children: [
-          NavigationRail(
-            selectedIndex: _i,
-            onDestinationSelected: (i) => setState(() => _i = i),
-            labelType: NavigationRailLabelType.all,
-            groupAlignment: 0,
-            minWidth: 88,
-            destinations: const [
-              NavigationRailDestination(
-                icon: Icon(Icons.live_tv_outlined),
-                selectedIcon: Icon(Icons.live_tv),
-                label: Text('TV Live'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.menu_rounded),
-                label: Text('Menu'),
-              ),
-            ],
-          ),
-          Expanded(
-            child: Column(children: [
-              const UpdateBar(),
-              Expanded(
-                child: IndexedStack(
-                  index: _i,
-                  children: const [LiveScreen(), MenuScreen()],
-                ),
-              ),
-            ]),
-          ),
-        ],
+    return const Scaffold(
+      body: SafeArea(
+        bottom: false,
+        child: Column(children: [
+          UpdateBar(),
+          Expanded(child: LiveScreen()),
+        ]),
       ),
     );
   }

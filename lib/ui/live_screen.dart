@@ -8,6 +8,7 @@ import 'categories_screen.dart';
 import 'channel_grid.dart';
 import 'common.dart';
 import 'epg_grid.dart';
+import 'menu_screen.dart';
 import 'player_screen.dart';
 
 class LiveScreen extends StatefulWidget {
@@ -190,6 +191,16 @@ class _LiveScreenState extends State<LiveScreen> {
         tooltip: s.settings.epgView ? 'Channel grid' : 'TV guide',
         icon: Icon(s.settings.epgView ? Icons.grid_view_rounded : Icons.view_list_rounded),
         onPressed: () => s.updateSettings((x) => x.epgView = !x.epgView),
+      ),
+      IconButton(
+        tooltip: 'Menu',
+        icon: const Icon(Icons.menu_rounded),
+        onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => Scaffold(
+            appBar: AppBar(title: const Text('Menu')),
+            body: const MenuScreen(),
+          ),
+        )),
       ),
     ];
 
