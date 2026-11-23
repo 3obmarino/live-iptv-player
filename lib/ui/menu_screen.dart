@@ -6,6 +6,7 @@ import 'common.dart';
 import 'epg_settings_screen.dart';
 import 'player_settings_screen.dart';
 import 'profiles_screen.dart';
+import '../updater.dart';
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
@@ -92,6 +93,21 @@ class MenuScreen extends StatelessWidget {
                   builder: (_) => const EpgSettingsScreen()))),
           item(Icons.dark_mode_outlined, 'Theme', _themeLabel(s.settings.themeMode),
               () => _pickTheme(context)),
+          item(Icons.system_update_alt_rounded, 'Check for updates', 'Version $appVersion',
+              () async {
+            if (appBuild == 0) {
+              toast(context, 'This is a local development build');
+              return;
+            }
+            final u = await Updater.I.check();
+            if (!context.mounted) return;
+            if (u == null) {
+              toast(context, 'You have the latest version');
+            } else {
+              Updater.I.show();
+              toast(context, 'Version ${u.version} is available – see the bar at the top');
+            }
+          }),
         ];
 
         if (compact) {

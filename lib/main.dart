@@ -9,6 +9,7 @@ import 'ui/common.dart';
 import 'ui/live_screen.dart';
 import 'ui/menu_screen.dart';
 import 'ui/profiles_screen.dart';
+import 'updater.dart';
 
 const appTitle = 'Live TV Player';
 
@@ -21,6 +22,7 @@ Future<void> main() async {
     await windowManager.setMinimumSize(const Size(960, 600));
   }
   await AppState.I.init();
+  Updater.I.start();
   runApp(const TvApp());
 }
 
@@ -72,10 +74,15 @@ class _HomeShellState extends State<HomeShell> {
       return Scaffold(
         body: SafeArea(
           bottom: false,
-          child: IndexedStack(
-            index: _i,
-            children: const [LiveScreen(), MenuScreen()],
-          ),
+          child: Column(children: [
+            const UpdateBar(),
+            Expanded(
+              child: IndexedStack(
+                index: _i,
+                children: const [LiveScreen(), MenuScreen()],
+              ),
+            ),
+          ]),
         ),
         bottomNavigationBar: NavigationBar(
           height: 64,
@@ -115,13 +122,69 @@ class _HomeShellState extends State<HomeShell> {
             ],
           ),
           Expanded(
-            child: IndexedStack(
-              index: _i,
-              children: const [LiveScreen(), MenuScreen()],
-            ),
+            child: Column(children: [
+              const UpdateBar(),
+              Expanded(
+                child: IndexedStack(
+                  index: _i,
+                  children: const [LiveScreen(), MenuScreen()],
+                ),
+              ),
+            ]),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Thin strip at the top of the app when a newer version is released.
+class UpdateBar extends StatelessWidget {
+  const UpdateBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: Updater.I,
+      builder: (context, _) {
+        final u = Updater.I;
+        final info = u.available;
+        if (info == null || u.dismissed) return const SizedBox.shrink();
+        final cs = Theme.of(context).colorScheme;
+        return Material(
+          color: kAccent.withOpacity(0.10),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+            child: Row(children: [
+              const Icon(Icons.system_update_alt_rounded, color: kAccent, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  u.installing
+                      ? 'Downloading version ${info.version}… ${((u.progress ?? 0) * 100).round()}%'
+                      : u.error != null
+                          ? 'Update failed: ${u.error}'
+                          : 'Version ${info.version} is available (you have $appVersion).',
+                  style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w500),
+                ),
+              ),
+              if (u.installing)
+                SizedBox(
+                  width: 120,
+                  child: LinearProgressIndicator(value: u.progress, color: kAccent),
+                )
+              else ...[
+                TextButton(onPressed: u.dismiss, child: const Text('Later')),
+                const SizedBox(width: 4),
+                FilledButton(
+                  onPressed: u.install,
+                  child: Text(Platform.isAndroid ? 'Download' : 'Install'),
+                ),
+              ],
+            ]),
+          ),
+        );
+      },
     );
   }
 }

@@ -3,7 +3,6 @@ name: Build Windows + Android
 on:
   push:
     branches: [main]
-    tags: ['v*']
   workflow_dispatch:
 
 jobs:
@@ -36,7 +35,7 @@ jobs:
         run: flutter test
 
       - name: Build
-        run: flutter build windows --release
+        run: flutter build windows --release --build-name=1.0.${{ github.run_number }} --build-number=${{ github.run_number }} --dart-define=APP_BUILD=${{ github.run_number }}
 
       - name: Bundle VC++ runtime (so it runs on a clean PC)
         shell: pwsh
@@ -56,18 +55,12 @@ jobs:
 
       - name: Portable zip
         shell: pwsh
-        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath dist\LiveTVPlayer-portable.zip
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath dist\LiveTVPlayer-portable-1.0.${{ github.run_number }}.zip
 
       - uses: actions/upload-artifact@v4
         with:
           name: LiveTVPlayer-Windows
           path: dist/*
-
-      - name: Attach to GitHub release (tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*
 
   android:
     runs-on: ubuntu-latest
@@ -79,6 +72,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # Newest stable: the Android media_kit plugins need compileSdk 36.
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -106,7 +100,7 @@ jobs:
       - run: flutter pub get
 
       - name: Build APK (arm64 – Pixel 7 and other modern phones)
-        run: flutter build apk --release --target-platform android-arm64
+        run: flutter build apk --release --target-platform android-arm64 --build-name=1.0.${{ github.run_number }} --build-number=${{ github.run_number }} --dart-define=APP_BUILD=${{ github.run_number }}
 
       - name: Rename
         run: |
@@ -118,8 +112,28 @@ jobs:
           name: LiveTV-Android
           path: dist/*.apk
 
-      - name: Attach to GitHub release (tags only)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+  # Every successful build on main becomes a GitHub release. The apps check
+  # "latest release" to offer updates.
+  release:
+    needs: [windows, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
         with:
-          files: dist/*.apk
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Live TV Player 1.0.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          body: |
+            Windows: download LiveTVPlayer-Setup-1.0.${{ github.run_number }}.exe (or use "Install" in the app).
+            Android: download LiveTV-1.0.${{ github.run_number }}-arm64.apk on the phone.
+
+            Changes: ${{ github.event.head_commit.message }}
+          files: dist/*

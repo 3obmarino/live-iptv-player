@@ -202,6 +202,7 @@ class Settings {
   bool hwdec = true;
   String userAgent = '';
   bool epgView = false;
+  double volume = 100;
 
   Map<String, dynamic> toJson() => {
         'epgEnabled': epgEnabled,
@@ -212,6 +213,7 @@ class Settings {
         'hwdec': hwdec,
         'userAgent': userAgent,
         'epgView': epgView,
+        'volume': volume,
       };
 
   factory Settings.fromJson(Map<String, dynamic> j) => Settings()
@@ -222,5 +224,6 @@ class Settings {
     ..streamFormat = j['streamFormat'] as String? ?? 'ts'
     ..hwdec = j['hwdec'] as bool? ?? true
     ..userAgent = j['userAgent'] as String? ?? ''
-    ..epgView = j['epgView'] as bool? ?? false;
+    ..epgView = j['epgView'] as bool? ?? false
+    ..volume = (j['volume'] as num?)?.toDouble() ?? 100;
 }
