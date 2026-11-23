@@ -75,22 +75,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ]);
         }
 
+        final compact = isCompact(context);
+        final searchField = TextField(
+          autofocus: !compact,
+          onChanged: (v) => setState(() => _q = v),
+          decoration: const InputDecoration(
+              hintText: 'Search categories',
+              prefixIcon: Icon(Icons.search, size: 20)),
+        );
         return Scaffold(
           appBar: AppBar(
             leading: IconButton(
                 icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
             title: const Text('Categories'),
             actions: [
-              SizedBox(
-                width: 340,
-                child: TextField(
-                  autofocus: true,
-                  onChanged: (v) => setState(() => _q = v),
-                  decoration: const InputDecoration(
-                      hintText: 'Search categories',
-                      prefixIcon: Icon(Icons.search, size: 20)),
-                ),
-              ),
+              if (!compact) SizedBox(width: 340, child: searchField),
               const SizedBox(width: 16),
               Tooltip(
                 message: 'Favourite categories only',
@@ -104,6 +103,15 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               ),
               const SizedBox(width: 16),
             ],
+            bottom: compact
+                ? PreferredSize(
+                    preferredSize: const Size.fromHeight(60),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: searchField,
+                    ),
+                  )
+                : null,
           ),
           body: ListView(children: [
             if (!_favOnly && q.isEmpty) ...[

@@ -90,7 +90,7 @@ class _LiveScreenState extends State<LiveScreen> {
         }
         final list = _filtered(s);
         return Padding(
-          padding: const EdgeInsets.fromLTRB(8, 16, 20, 16),
+          padding: isCompact(context) ? const EdgeInsets.fromLTRB(8, 8, 8, 8) : const EdgeInsets.fromLTRB(8, 16, 20, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -107,81 +107,111 @@ class _LiveScreenState extends State<LiveScreen> {
   Widget _header(BuildContext context, AppState s) {
     final t = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
+    final compact = isCompact(context);
+    final busy = s.loadingChannels || s.epgLoading;
+
+    final title = InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: _pickCategory,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              Text('Categories',
+                  style: (compact ? t.titleLarge : t.headlineSmall)
+                      ?.copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(width: 6),
+              Icon(Icons.keyboard_arrow_down_rounded, color: cs.onSurfaceVariant),
+            ]),
+            Text(_categoryName(s),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: t.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+          ],
+        ),
+      ),
+    );
+
+    final status = busy
+        ? Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Tooltip(
+              message: s.loadingChannels ? 'Updating channels…' : 'Updating TV guide…',
+              child: Row(children: [
+                const SizedBox(
+                    width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                if (!compact) ...[
+                  const SizedBox(width: 8),
+                  Text(s.loadingChannels ? 'Updating channels…' : 'Updating TV guide…',
+                      style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                ],
+              ]),
+            ),
+          )
+        : const SizedBox.shrink();
+
+    final search = TextField(
+      controller: _search,
+      onChanged: (v) => setState(() => _query = v),
+      decoration: InputDecoration(
+        hintText: 'Search channels',
+        prefixIcon: const Icon(Icons.search, size: 20),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: BorderSide(color: cs.outlineVariant)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: BorderSide(color: cs.outlineVariant)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: const BorderSide(color: kAccent, width: 1.5)),
+        suffixIcon: _query.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () {
+                  _search.clear();
+                  setState(() => _query = '');
+                },
+              ),
+      ),
+    );
+
+    final buttons = <Widget>[
+      IconButton(
+        tooltip: 'Recently watched',
+        icon: const Icon(Icons.history),
+        onPressed: () => _showRecents(context, s),
+      ),
+      IconButton(
+        tooltip: s.settings.epgView ? 'Channel grid' : 'TV guide',
+        icon: Icon(s.settings.epgView ? Icons.grid_view_rounded : Icons.view_list_rounded),
+        onPressed: () => s.updateSettings((x) => x.epgView = !x.epgView),
+      ),
+    ];
+
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(children: [Expanded(child: Align(alignment: Alignment.centerLeft, child: title)), status, ...buttons]),
+          const SizedBox(height: 8),
+          search,
+        ],
+      );
+    }
     return Row(
       children: [
-        InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: _pickCategory,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text('Categories',
-                      style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-                  const SizedBox(width: 6),
-                  Icon(Icons.keyboard_arrow_down_rounded, color: cs.onSurfaceVariant),
-                ]),
-                Text(_categoryName(s),
-                    style: t.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
-              ],
-            ),
-          ),
-        ),
+        title,
         const Spacer(),
-        if (s.loadingChannels || s.epgLoading)
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Row(children: [
-              const SizedBox(
-                  width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
-              const SizedBox(width: 8),
-              Text(s.loadingChannels ? 'Updating channels…' : 'Updating TV guide…',
-                  style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-            ]),
-          ),
-        SizedBox(
-          width: 340,
-          child: TextField(
-            controller: _search,
-            onChanged: (v) => setState(() => _query = v),
-            decoration: InputDecoration(
-              hintText: 'Search channels',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: cs.outlineVariant)),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide(color: cs.outlineVariant)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: const BorderSide(color: kAccent, width: 1.5)),
-              suffixIcon: _query.isEmpty
-                  ? null
-                  : IconButton(
-                      icon: const Icon(Icons.close, size: 18),
-                      onPressed: () {
-                        _search.clear();
-                        setState(() => _query = '');
-                      },
-                    ),
-            ),
-          ),
-        ),
+        status,
+        SizedBox(width: 340, child: search),
         const SizedBox(width: 8),
-        IconButton(
-          tooltip: 'Recently watched',
-          icon: const Icon(Icons.history),
-          onPressed: () => _showRecents(context, s),
-        ),
-        IconButton(
-          tooltip: s.settings.epgView ? 'Channel grid' : 'TV guide',
-          icon: Icon(s.settings.epgView ? Icons.grid_view_rounded : Icons.view_list_rounded),
-          onPressed: () => s.updateSettings((x) => x.epgView = !x.epgView),
-        ),
+        ...buttons,
       ],
     );
   }

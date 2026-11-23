@@ -51,6 +51,66 @@ class MenuScreen extends StatelessWidget {
               ],
             );
 
+        final compact = isCompact(context);
+        final profileInfo = <Widget>[
+          CircleAvatar(
+            radius: compact ? 28 : 36,
+            backgroundColor: kAccent,
+            child: Text(
+              (p?.name.isNotEmpty ?? false) ? p!.name.substring(0, 1).toUpperCase() : '?',
+              style: TextStyle(
+                  color: Colors.white, fontSize: compact ? 22 : 28, fontWeight: FontWeight.w700),
+            ),
+          ),
+          SizedBox(height: compact ? 12 : 20),
+          Text(p?.name ?? 'No profile',
+              style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+          if (p != null)
+            Text(p.host, style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+          if (p?.expDate != null)
+            Text('Expires ${fmtDate(p!.expDate!)}',
+                style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+          SizedBox(height: compact ? 12 : 20),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const ProfilesScreen())),
+            icon: const Icon(Icons.manage_accounts_outlined, size: 18),
+            label: const Text('Manage profiles'),
+          ),
+        ];
+        final menuItems = <Widget>[
+          item(Icons.playlist_play_rounded, 'Playlist', playlistSub(), () async {
+            if (p == null) return;
+            final err = await s.refreshChannels(p);
+            if (context.mounted) toast(context, err ?? 'Channel list updated');
+          }),
+          item(Icons.play_circle_outline_rounded, 'Video player settings', null,
+              () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => const PlayerSettingsScreen()))),
+          item(Icons.calendar_view_week_rounded, 'EPG', epgSub(),
+              () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => const EpgSettingsScreen()))),
+          item(Icons.dark_mode_outlined, 'Theme', _themeLabel(s.settings.themeMode),
+              () => _pickTheme(context)),
+        ];
+
+        if (compact) {
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                    color: cs.surfaceContainerLow, borderRadius: BorderRadius.circular(14)),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start, children: profileInfo),
+              ),
+              const SizedBox(height: 16),
+              ...menuItems,
+            ],
+          );
+        }
+
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -59,34 +119,7 @@ class MenuScreen extends StatelessWidget {
               color: cs.surfaceContainerLow,
               padding: const EdgeInsets.fromLTRB(36, 48, 24, 24),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundColor: kAccent,
-                    child: Text(
-                      (p?.name.isNotEmpty ?? false) ? p!.name.substring(0, 1).toUpperCase() : '?',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(p?.name ?? 'No profile',
-                      style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                  if (p != null)
-                    Text(p.host, style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-                  if (p?.expDate != null)
-                    Text('Expires ${fmtDate(p!.expDate!)}',
-                        style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
-                  const SizedBox(height: 20),
-                  OutlinedButton.icon(
-                    onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(builder: (_) => const ProfilesScreen())),
-                    icon: const Icon(Icons.manage_accounts_outlined, size: 18),
-                    label: const Text('Manage profiles'),
-                  ),
-                ],
-              ),
+                  crossAxisAlignment: CrossAxisAlignment.start, children: profileInfo),
             ),
             Expanded(
               child: ListView(
@@ -94,19 +127,7 @@ class MenuScreen extends StatelessWidget {
                 children: [
                   Text('Menu', style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 24),
-                  item(Icons.playlist_play_rounded, 'Playlist', playlistSub(), () async {
-                    if (p == null) return;
-                    final err = await s.refreshChannels(p);
-                    if (context.mounted) toast(context, err ?? 'Channel list updated');
-                  }),
-                  item(Icons.play_circle_outline_rounded, 'Video player settings', null,
-                      () => Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => const PlayerSettingsScreen()))),
-                  item(Icons.calendar_view_week_rounded, 'EPG', epgSub(),
-                      () => Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => const EpgSettingsScreen()))),
-                  item(Icons.dark_mode_outlined, 'Theme', _themeLabel(s.settings.themeMode),
-                      () => _pickTheme(context)),
+                  ...menuItems,
                 ],
               ),
             ),
@@ -117,7 +138,7 @@ class MenuScreen extends StatelessWidget {
   }
 
   static String _themeLabel(String m) =>
-      switch (m) { 'light' => 'Light', 'dark' => 'Dark', _ => 'Follow Windows' };
+      switch (m) { 'light' => 'Light', 'dark' => 'Dark', _ => 'Follow system' };
 
   Future<void> _pickTheme(BuildContext context) async {
     final s = AppState.I;

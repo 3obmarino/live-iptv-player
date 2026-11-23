@@ -68,6 +68,31 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    if (isCompact(context)) {
+      return Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: IndexedStack(
+            index: _i,
+            children: const [LiveScreen(), MenuScreen()],
+          ),
+        ),
+        bottomNavigationBar: NavigationBar(
+          height: 64,
+          selectedIndex: _i,
+          onDestinationSelected: (i) => setState(() => _i = i),
+          indicatorColor: kAccent.withOpacity(0.12),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.live_tv_outlined),
+              selectedIcon: Icon(Icons.live_tv, color: kAccent),
+              label: 'TV Live',
+            ),
+            NavigationDestination(icon: Icon(Icons.menu_rounded), label: 'Menu'),
+          ],
+        ),
+      );
+    }
     return Scaffold(
       body: Row(
         children: [

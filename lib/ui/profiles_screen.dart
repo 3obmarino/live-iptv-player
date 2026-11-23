@@ -61,7 +61,7 @@ class _ProfileCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final isActive = s.activeId == p.id;
     return SizedBox(
-      width: 360,
+      width: isCompact(context) ? MediaQuery.sizeOf(context).width - 48 : 360,
       child: Card(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),

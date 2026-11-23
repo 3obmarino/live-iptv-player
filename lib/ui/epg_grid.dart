@@ -85,7 +85,7 @@ class _EpgGridState extends State<EpgGrid> {
         children: [
           // ---- channel column (scroll synced from the right side)
           SizedBox(
-            width: chW,
+            width: isCompact(context) ? 92 : chW,
             child: Column(children: [
               SizedBox(
                 height: headerH,

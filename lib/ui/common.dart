@@ -273,3 +273,6 @@ void showChannelGuide(BuildContext context, Channel c, {VoidCallback? onWatch}) 
     },
   );
 }
+
+/// Phone-sized layout (Pixel 7 portrait is ~412 dp wide).
+bool isCompact(BuildContext context) => MediaQuery.sizeOf(context).width < 720;

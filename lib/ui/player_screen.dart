@@ -68,6 +68,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
       }
       if (playing) _retries = 0;
     }));
+    if (!_desktop) {
+      SystemChrome.setPreferredOrientations(
+          [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
     _configure().then((_) {
       if (mounted) _open();
     });
@@ -191,6 +196,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _infoTimer?.cancel();
     _listCtrl?.dispose();
     if (_fullscreen && _desktop) windowManager.setFullScreen(false);
+    if (!_desktop) {
+      SystemChrome.setPreferredOrientations(const []);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
     _player.dispose();
     _focus.dispose();
     super.dispose();
@@ -246,6 +255,34 @@ class _PlayerScreenState extends State<PlayerScreen> {
       ],
     );
 
+    final mobileTheme = MaterialVideoControlsThemeData(
+      displaySeekBar: false,
+      volumeGesture: true,
+      brightnessGesture: true,
+      topButtonBar: [
+        MaterialCustomButton(
+            icon: const Icon(Icons.arrow_back), onPressed: _exitOrBack),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(_channel.name,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
+        ),
+        MaterialCustomButton(
+            icon: const Icon(Icons.format_list_bulleted_rounded), onPressed: _toggleList),
+      ],
+      bottomButtonBar: [
+        MaterialCustomButton(
+            icon: const Icon(Icons.skip_previous_rounded), onPressed: () => _zap(-1)),
+        MaterialCustomButton(
+            icon: const Icon(Icons.skip_next_rounded), onPressed: () => _zap(1)),
+        const Spacer(),
+        MaterialCustomButton(
+            icon: const Icon(Icons.info_outline_rounded), onPressed: _flashInfo),
+      ],
+    );
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: CallbackShortcuts(
@@ -257,17 +294,34 @@ class _PlayerScreenState extends State<PlayerScreen> {
             children: [
               Expanded(
                 child: GestureDetector(
-                  onDoubleTap: _toggleFullscreen,
+                  onDoubleTap: _desktop ? _toggleFullscreen : null,
+                  // Phone: swipe left/right to change channel.
+                  onHorizontalDragEnd: _desktop
+                      ? null
+                      : (d) {
+                          final v = d.primaryVelocity ?? 0;
+                          if (v.abs() > 300) _zap(v < 0 ? 1 : -1);
+                        },
                   child: Stack(
                     children: [
-                      MaterialDesktopVideoControlsTheme(
-                        normal: theme,
-                        fullscreen: theme,
-                        child: Video(
-                          controller: _controller,
-                          controls: MaterialDesktopVideoControls,
+                      if (_desktop)
+                        MaterialDesktopVideoControlsTheme(
+                          normal: theme,
+                          fullscreen: theme,
+                          child: Video(
+                            controller: _controller,
+                            controls: MaterialDesktopVideoControls,
+                          ),
+                        )
+                      else
+                        MaterialVideoControlsTheme(
+                          normal: mobileTheme,
+                          fullscreen: mobileTheme,
+                          child: Video(
+                            controller: _controller,
+                            controls: MaterialVideoControls,
+                          ),
                         ),
-                      ),
                       Positioned(
                         left: 24,
                         bottom: 72,
