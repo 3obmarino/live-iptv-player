@@ -63,6 +63,9 @@ class _ProfileCard extends StatelessWidget {
     return SizedBox(
       width: isCompact(context) ? MediaQuery.sizeOf(context).width - 48 : 360,
       child: Card(
+        elevation: 0,
+        color: cs.surface,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
           side: BorderSide(color: isActive ? kAccent : cs.outlineVariant, width: isActive ? 1.5 : 1),

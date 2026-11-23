@@ -53,14 +53,6 @@ ThemeData buildTheme(Brightness b) {
           fontWeight: FontWeight.w700,
           color: text),
     ),
-    cardTheme: CardTheme(
-      color: surface,
-      elevation: 0,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: line)),
-    ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: surface,
