@@ -8,5 +8,5 @@
 <path d="M50 38v30" opacity=".75"/><path d="M59 38v12"/><path d="M59 58v10" opacity=".5"/>
 <path d="M69 38v18" opacity=".75"/></g>
 <path d="M38 16l12 12 12-12" fill="none" stroke="#00FF41" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></g>
-<text x="128" y="106" font-family="Inter, 'Segoe UI', sans-serif" font-weight="700" font-size="44" fill="#FFFFFF" letter-spacing="-1">Live<tspan fill="#00FF41" dx="8">TV</tspan></text>
+<text x="128" y="106" font-family="Inter, 'Segoe UI', sans-serif" font-weight="700" font-size="44" fill="#FFFFFF" letter-spacing="-1">Live<tspan fill="#00FF41" dx="3">TV</tspan></text>
 </svg>

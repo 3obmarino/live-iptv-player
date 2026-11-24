@@ -35,7 +35,7 @@ def banner_a(w=320, h=180):
 <rect width="320" height="180" fill="{K}"/>{rain_bg(320,180,op=0.13)}
 <rect x="22" y="44" width="92" height="92" rx="20" fill="{K}"/>
 {rain_icon(22, 44, 92)}
-<text x="128" y="106" {FONT} font-size="44" fill="#FFFFFF" letter-spacing="-1">Live<tspan fill="{G}" dx="8">TV</tspan></text>
+<text x="128" y="106" {FONT} font-size="44" fill="#FFFFFF" letter-spacing="-1">Live<tspan fill="{G}" dx="3">TV</tspan></text>
 </svg>'''
 
 def banner_b(w=320, h=180):
@@ -43,7 +43,7 @@ def banner_b(w=320, h=180):
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 320 180">
 <rect width="320" height="180" fill="{K}"/>{rain_bg(320,180,seed=3,cols=40,op=0.42)}
 <rect x="0" y="58" width="320" height="64" fill="{K}" opacity=".82"/>
-<text x="151" y="106" text-anchor="end" {FONT} font-size="48" fill="#FFFFFF" letter-spacing="-1">Live</text><text x="165" y="106" {FONT} font-size="48" fill="{G}" letter-spacing="-1">TV</text>
+<text x="173" y="106" text-anchor="end" {FONT} font-size="48" fill="#FFFFFF" letter-spacing="-1">Live</text><text x="178" y="106" {FONT} font-size="48" fill="{G}" letter-spacing="-1">TV</text>
 </svg>'''
 
 def app_icon(size=512, rx=22):
