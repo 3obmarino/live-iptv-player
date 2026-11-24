@@ -65,6 +65,12 @@ key KEYCODE_DPAD_CENTER 3;              shot D4_settings_open_item
 key KEYCODE_BACK 2;                     shot D5_back
 key KEYCODE_BACK 3;                     shot D6_back_to_tv
 
+# E: leave with HOME and come back: the picture must keep moving
+fresh
+key KEYCODE_HOME 6
+adb shell am start -n "$PKG/.MainActivity" >/dev/null; sleep 12
+shot E1_resumed_a; sleep 3; shot E2_resumed_b
+
 adb logcat -d > "$OUT/logcat_full.txt" || true
 # Android's freeze ("not responding") reports with the blocking stack traces
 adb root >/dev/null 2>&1 || true; sleep 3

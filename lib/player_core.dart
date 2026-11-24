@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
@@ -10,8 +10,9 @@ import 'models.dart';
 
 /// Playback engine shared by the TV screens: opens channels, reconnects
 /// dropped streams, reports status. UI listens via ChangeNotifier.
-class PlayerCore extends ChangeNotifier {
+class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
   PlayerCore() {
+    WidgetsBinding.instance.addObserver(this);
     player = Player();
     controller = VideoController(player, configuration: videoConfig());
     _subs.add(player.stream.error.listen(_onError));
@@ -86,8 +87,28 @@ class PlayerCore extends ChangeNotifier {
     });
   }
 
+  /// Leaving the app (HOME) destroys the video surface on Android TV. Stop
+  /// the stream and restart the channel on return, so the picture never
+  /// stays frozen on the old surface.
+  bool _wasBackgrounded = false;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      if (!_wasBackgrounded && channel != null) {
+        _wasBackgrounded = true;
+        _retryTimer?.cancel();
+        player.stop();
+      }
+    } else if (state == AppLifecycleState.resumed && _wasBackgrounded) {
+      _wasBackgrounded = false;
+      retry();
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _disposed = true;
     for (final s in _subs) {
       s.cancel();

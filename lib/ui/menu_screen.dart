@@ -1,8 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../models.dart';
-import '../updater.dart' show kTvBuild;
 import 'common.dart';
 import 'epg_settings_screen.dart';
 import 'player_settings_screen.dart';
@@ -110,10 +111,9 @@ class MenuScreen extends StatelessWidget {
             final u = await Updater.I.check();
             if (!context.mounted) return;
             if (u == null) {
-              toast(context, 'You have the latest version');
+              toast(context, 'You have the latest version ($appVersion)');
             } else {
-              Updater.I.show();
-              toast(context, 'Version ${u.version} is available – see the bar at the top');
+              showUpdateDialog(context);
             }
           }),
         ];
@@ -184,4 +184,57 @@ class MenuScreen extends StatelessWidget {
     );
     if (v != null) await s.updateSettings((x) => x.themeMode = v);
   }
+}
+
+
+/// "Version X is available" with Install button and download progress.
+void showUpdateDialog(BuildContext context) {
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => ListenableBuilder(
+      listenable: Updater.I,
+      builder: (ctx, _) {
+        final u = Updater.I;
+        final info = u.available;
+        return AlertDialog(
+          title: Text(info == null ? 'Up to date' : 'Version ${info.version} is available'),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('You have $appVersion.'),
+                if (u.installing) ...[
+                  const SizedBox(height: 16),
+                  LinearProgressIndicator(value: u.progress),
+                  const SizedBox(height: 8),
+                  Text('Downloading… ${((u.progress ?? 0) * 100).round()}%'),
+                ],
+                if (u.error != null) ...[
+                  const SizedBox(height: 12),
+                  Text('Update failed: ${u.error}',
+                      style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+                ],
+                if (Platform.isAndroid && !u.installing) ...[
+                  const SizedBox(height: 12),
+                  const Text(
+                      'Android may ask you to allow Live TV to install apps the first time.',
+                      style: TextStyle(fontSize: 13)),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
+            FilledButton(
+              autofocus: true,
+              onPressed: info == null || u.installing ? null : u.install,
+              child: const Text('Install'),
+            ),
+          ],
+        );
+      },
+    ),
+  );
 }

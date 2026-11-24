@@ -25,7 +25,7 @@ class PlayerScreen extends StatefulWidget {
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
 
-class _PlayerScreenState extends State<PlayerScreen> {
+class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver {
   late final Player _player;
   late final VideoController _controller;
   late int _index;
@@ -60,6 +60,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     super.initState();
     _index = (widget.index < 0 || widget.index >= widget.playlist.length) ? 0 : widget.index;
     _volume = AppState.I.settings.volume;
+    WidgetsBinding.instance.addObserver(this);
     _player = Player();
     _controller = VideoController(_player, configuration: videoConfig());
     _subs.add(_player.stream.error.listen(_onError));
@@ -235,8 +236,27 @@ class _PlayerScreenState extends State<PlayerScreen> {
     });
   }
 
+  bool _wasBackgrounded = false;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_desktop) return; // desktop keeps playing when minimised
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      if (!_wasBackgrounded) {
+        _wasBackgrounded = true;
+        _retryTimer?.cancel();
+        _player.stop();
+      }
+    } else if (state == AppLifecycleState.resumed && _wasBackgrounded) {
+      _wasBackgrounded = false;
+      _retries = 0;
+      _open();
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     for (final s in _subs) {
       s.cancel();
     }
