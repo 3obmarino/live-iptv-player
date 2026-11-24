@@ -20,9 +20,27 @@ class ChannelCheckScreen extends StatefulWidget {
 }
 
 class _Dead {
-  _Dead(this.channel, this.reason);
+  _Dead(this.channel, this.url, ProbeResult r)
+      : code = r.code,
+        reason = r.reason!;
   final Channel channel;
+  final String url;
+  int? code; // HTTP response code, null when the server never answered
   String reason;
+
+  String get codeText => code == null ? '—' : '$code';
+
+  void update(ProbeResult r) {
+    code = r.code;
+    reason = r.reason!;
+  }
+}
+
+class ProbeResult {
+  const ProbeResult(this.code, this.reason);
+  final int? code;
+  final String? reason; // null = working
+  bool get ok => reason == null;
 }
 
 const _kAll = '__all__';
@@ -71,8 +89,8 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
 
     // Pass 1: every channel.
     final failed = <_Dead>[];
-    await _runPool(list, _parallel, (c, err) {
-      if (err != null) failed.add(_Dead(c, err));
+    await _runPool(list, _parallel, (c, url, r) {
+      if (!r.ok) failed.add(_Dead(c, url, r));
     });
 
     // Pass 2: try the failures once more, one at a time, so a short hiccup
@@ -87,11 +105,11 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
       await Future<void>.delayed(const Duration(seconds: 2));
       if (!mounted) return;
       final byChannel = {for (final d in failed) d.channel: d};
-      await _runPool([for (final d in failed) d.channel], 1, (c, err) {
-        if (err == null) {
+      await _runPool([for (final d in failed) d.channel], 1, (c, url, r) {
+        if (r.ok) {
           byChannel.remove(c);
         } else {
-          byChannel[c]!.reason = err;
+          byChannel[c]!.update(r);
         }
       });
       failed
@@ -111,18 +129,19 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
   }
 
   Future<void> _runPool(List<Channel> list, int parallel,
-      void Function(Channel c, String? err) onResult) async {
+      void Function(Channel c, String url, ProbeResult r) onResult) async {
     var next = 0;
     final ua = AppState.I.settings.userAgent;
     Future<void> worker() async {
       while (!_stop && next < list.length) {
         final c = list[next++];
-        final err = await probeStream(AppState.I.streamUrlFor(c), ua);
+        final url = AppState.I.streamUrlFor(c);
+        final r = await probeStream(url, ua);
         if (!mounted) return;
-        onResult(c, err);
+        onResult(c, url, r);
         setState(() {
           _done++;
-          if (err != null && _phase == 'Checking') _dead.add(_Dead(c, err));
+          if (!r.ok && _phase == 'Checking') _dead.add(_Dead(c, url, r));
         });
       }
     }
@@ -137,6 +156,7 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
       ..writeln('Checked: ${_started ?? DateTime.now()}')
       ..writeln('Scope: ${_scope == _kAll ? 'All channels' : _categoryName(_scope)}')
       ..writeln('Dead: ${_dead.length}')
+      ..writeln('Note: the addresses below contain your login – do not share this file.')
       ..writeln();
     final sorted = List.of(_dead)
       ..sort((a, b) => _categoryName(a.channel.categoryId)
@@ -150,7 +170,10 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
           ..writeln()
           ..writeln('[${n.isEmpty ? 'No category' : n}]');
       }
-      b.writeln('${d.channel.name}  –  ${d.reason}');
+      b
+        ..writeln('${d.channel.name}')
+        ..writeln('  HTTP: ${d.codeText}   ${d.reason}')
+        ..writeln('  ${d.url}');
     }
     return b.toString();
   }
@@ -278,9 +301,21 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
                       dense: true,
                       leading: ChannelLogo(d.channel, size: 32),
                       title: Text(d.channel.name),
-                      subtitle: Text(_categoryName(d.channel.categoryId)),
-                      trailing: Text(d.reason,
-                          style: TextStyle(color: theme.colorScheme.error)),
+                      subtitle: SelectableText(
+                          '${_categoryName(d.channel.categoryId)}\n${d.url}',
+                          maxLines: 2),
+                      isThreeLine: true,
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('HTTP ${d.codeText}',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: theme.colorScheme.error)),
+                          Text(d.reason, style: theme.textTheme.bodySmall),
+                        ],
+                      ),
                     );
                   },
                 ),
@@ -293,20 +328,22 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
   }
 }
 
-/// Opens [url] and waits for the first bytes of video. Returns null when the
-/// stream answers, otherwise a short reason. Never logs or returns the URL
-/// (it contains your login).
-Future<String?> probeStream(String url, String userAgent) async {
+/// Opens [url] and waits for the first bytes of video. Returns the HTTP
+/// response code (null if the server never answered) and, when it doesn't
+/// work, a short reason.
+Future<ProbeResult> probeStream(String url, String userAgent) async {
   final client = HttpClient()
     ..connectionTimeout = const Duration(seconds: 8)
     ..userAgent = userAgent.isEmpty ? 'libmpv' : userAgent; // same as the player
+  int? code;
   try {
     final req = await client.getUrl(Uri.parse(url)).timeout(const Duration(seconds: 8));
     req.followRedirects = true;
     req.maxRedirects = 5;
     final res = await req.close().timeout(const Duration(seconds: 10));
-    if (res.statusCode != 200 && res.statusCode != 206) {
-      return 'HTTP ${res.statusCode}';
+    code = res.statusCode;
+    if (code != 200 && code != 206) {
+      return ProbeResult(code, res.reasonPhrase.isEmpty ? 'Refused' : res.reasonPhrase);
     }
     final head = BytesBuilder(copy: false);
     var got = 0;
@@ -315,24 +352,24 @@ Future<String?> probeStream(String url, String userAgent) async {
       if (head.length < 512) head.add(chunk);
       if (got >= 8192) break;
     }
-    if (got == 0) return 'No data';
+    if (got == 0) return ProbeResult(code, 'No data');
     final start = latin1.decode(head.takeBytes().take(512).toList(), allowInvalid: true)
         .trimLeft()
         .toLowerCase();
     if (start.startsWith('<!doctype html') || start.startsWith('<html')) {
-      return 'Not a stream';
+      return ProbeResult(code, 'Not a stream (web page)');
     }
-    return null;
+    return ProbeResult(code, null);
   } on TimeoutException {
-    return 'No answer';
+    return ProbeResult(code, code == null ? 'No answer' : 'No video data');
   } on SocketException {
-    return 'Connection failed';
+    return ProbeResult(code, 'Connection failed');
   } on HandshakeException {
-    return 'Secure connection failed';
+    return ProbeResult(code, 'Secure connection failed');
   } on HttpException {
-    return 'Connection failed';
+    return ProbeResult(code, 'Connection failed');
   } catch (_) {
-    return 'Error';
+    return ProbeResult(code, 'Error');
   } finally {
     client.close(force: true);
   }
