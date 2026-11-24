@@ -23,6 +23,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequiredOverridesAllowed=dialog
 UninstallDisplayIcon={app}\{#MyAppExe}
+SetupIconFile=..\branding\app_icon.ico
 CloseApplications=force
 RestartApplications=no
 
