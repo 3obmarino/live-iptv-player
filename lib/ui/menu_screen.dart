@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../models.dart';
+import '../updater.dart' show kTvBuild;
 import 'common.dart';
 import 'epg_settings_screen.dart';
 import 'player_settings_screen.dart';
@@ -38,9 +39,15 @@ class MenuScreen extends StatelessWidget {
               '${last == null ? '' : ' · last ${fmtDateTime(last)}'}';
         }
 
-        Widget item(IconData icon, String title, String? sub, VoidCallback onTap) => Column(
+        var firstItem = true;
+        Widget item(IconData icon, String title, String? sub, VoidCallback onTap) {
+          final auto = kTvBuild && firstItem;
+          firstItem = false;
+          return Column(
               children: [
                 ListTile(
+                  // TV: start with focus on the first entry so ▲▼ work at once
+                  autofocus: auto,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   leading: Icon(icon),
                   title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
@@ -51,6 +58,7 @@ class MenuScreen extends StatelessWidget {
                 const Divider(),
               ],
             );
+        }
 
         final compact = isCompact(context);
         final profileInfo = <Widget>[

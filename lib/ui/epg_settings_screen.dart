@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../models.dart';
 import 'common.dart';
+import '../updater.dart' show kTvBuild;
 
 class EpgSettingsScreen extends StatefulWidget {
   const EpgSettingsScreen({super.key});
@@ -99,6 +100,7 @@ class _EpgSettingsScreenState extends State<EpgSettingsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             children: [
               SwitchListTile(
+                autofocus: kTvBuild,
                 title: const Text('Enabled'),
                 value: s.settings.epgEnabled,
                 onChanged: (v) => s.updateSettings((x) => x.epgEnabled = v),

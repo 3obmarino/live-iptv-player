@@ -91,7 +91,7 @@ ThemeData buildTheme(Brightness b) {
     tooltipTheme: const TooltipThemeData(waitDuration: Duration(milliseconds: 500)),
     // Clear focus for remotes and keyboards: a thick ring on the focused
     // button, and a stronger highlight on focused list rows.
-    focusColor: kTvBuild ? text.withOpacity(0.18) : null,
+    focusColor: kTvBuild ? accent.withOpacity(0.30) : null,
     filledButtonTheme: FilledButtonThemeData(style: _focusRing(text)),
     outlinedButtonTheme: OutlinedButtonThemeData(style: _focusRing(text)),
     textButtonTheme: TextButtonThemeData(style: _focusRing(text)),

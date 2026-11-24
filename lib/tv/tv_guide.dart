@@ -35,7 +35,7 @@ class TvGuide extends StatefulWidget {
 }
 
 class TvGuideState extends State<TvGuide> {
-  static const double rowH = 46;
+  static const double rowH = 40;
   double chW = 300; // narrower when the sidebar is open
   int windowMin = 150; // 2½ h across the grid (1½ h when narrow)
   static const int halfHour = 30 * 60000;
@@ -359,11 +359,11 @@ class TvGuideState extends State<TvGuide> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                       color: isSelRow ? kAccent : Colors.white70,
-                      fontSize: 17,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600)),
             ),
             const SizedBox(width: 8),
-            ChannelLogo(c, size: 36),
+            ChannelLogo(c, size: 32),
             const SizedBox(width: 12),
             Expanded(
               child: Text(c.name,
@@ -371,7 +371,7 @@ class TvGuideState extends State<TvGuide> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       color: isSelRow ? kAccent : Colors.white,
-                      fontSize: 17,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600)),
             ),
             if (playing)
@@ -421,7 +421,7 @@ class TvGuideState extends State<TvGuide> {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                   color: selected ? kOnAccent : Colors.white,
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
         ),
       ));
