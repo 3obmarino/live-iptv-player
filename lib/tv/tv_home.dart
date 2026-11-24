@@ -54,11 +54,12 @@ class _TvHomeState extends State<TvHome> {
   String? _toast;
   Timer? _toastTimer;
   Timer? _clock;
-  Timer? _badgeTimer;
   bool _okDown = false;
   bool _okLong = false;
   DateTime? _lastBackCall;
-  List<String> _badges = const [];
+  final List<StreamSubscription<dynamic>> _subs = [];
+  final _tileCtrl = ScrollController();
+  bool _tilesOn = false;
 
   static const double _sideW = 300;
 
@@ -69,6 +70,10 @@ class _TvHomeState extends State<TvHome> {
     AppState.I.addListener(_onState);
     Updater.I.addListener(_refresh);
     _clock = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
+    final st = _core.player.stream;
+    _subs.add(st.videoParams.listen((_) => _refresh()));
+    _subs.add(st.audioParams.listen((_) => _refresh()));
+    _subs.add(st.track.listen((_) => _refresh()));
     WidgetsBinding.instance.addPostFrameCallback((_) => _onState());
   }
 
@@ -129,9 +134,7 @@ class _TvHomeState extends State<TvHome> {
 
   void _play(Channel c, {bool showInfo = true}) {
     _core.play(c);
-    _badges = const [];
-    _scheduleBadges();
-    if (showInfo) _showInfo(focusTiles: false);
+    if (showInfo) _showInfo(tiles: false);
   }
 
   void _zap(int d) {
@@ -143,15 +146,31 @@ class _TvHomeState extends State<TvHome> {
     _play(_list[i]);
   }
 
-  void _showInfo({bool focusTiles = true}) {
+  /// [tiles]: true = OK pressed: show the TV guide/recent strip with
+  /// focus on its first tile; false = zap: channel info only.
+  void _showInfo({bool tiles = true, bool keepTile = false}) {
     _infoTimer?.cancel();
     setState(() {
       _mode = _Mode.info;
-      if (focusTiles) _tile = 0;
+      _tilesOn = tiles;
+      if (tiles && !keepTile) _tile = 0;
     });
-    _scheduleBadges();
+    if (tiles && !keepTile) _scrollTiles();
     _infoTimer = Timer(const Duration(seconds: 7), () {
       if (mounted && _mode == _Mode.info) setState(() => _mode = _Mode.play);
+    });
+  }
+
+  void _scrollTiles() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_tileCtrl.hasClients) return;
+      const w = 190.0 + 14.0; // tile + gap
+      final view = _tileCtrl.position.viewportDimension;
+      final target = (_tile * w - view / 2 + w / 2)
+          .clamp(0.0, _tileCtrl.position.maxScrollExtent)
+          .toDouble();
+      _tileCtrl.animateTo(target,
+          duration: const Duration(milliseconds: 160), curve: Curves.easeOut);
     });
   }
 
@@ -230,33 +249,19 @@ class _TvHomeState extends State<TvHome> {
         : '${c.name} removed from favourites');
   }
 
-  /// FHD / 25 FPS / STEREO, read from mpv once the stream runs.
-  void _scheduleBadges() {
-    _badgeTimer?.cancel();
-    _badgeTimer = Timer(const Duration(seconds: 2), _readBadges);
-  }
-
-  Future<void> _readBadges() async {
-    final p = _core.player.platform;
-    if (p is! NativePlayer) return;
-    Future<String> prop(String n) async {
-      try {
-        return await p.getProperty(n);
-      } catch (_) {
-        return '';
-      }
-    }
-
-    final h = int.tryParse(await prop('height')) ?? 0;
-    final fps = double.tryParse(await prop('container-fps')) ?? 0;
-    final ch = int.tryParse(await prop('audio-params/channel-count')) ?? 0;
-    final b = <String>[
+  /// FHD / 25 FPS / STEREO from mpv's own status events. (Reading mpv
+  /// properties directly blocks the UI thread while a stream connects, which
+  /// froze the app when zapping.)
+  List<String> _badgesNow() {
+    final st = _core.player.state;
+    final h = st.videoParams.h ?? 0;
+    final fps = st.track.video.fps ?? 0;
+    final ch = st.audioParams.channelCount ?? 0;
+    return <String>[
       if (h >= 2000) 'UHD' else if (h >= 1000) 'FHD' else if (h >= 700) 'HD' else if (h > 0) 'SD',
       if (fps > 0) '${fps.round()} FPS',
       if (ch == 1) 'MONO' else if (ch == 2) 'STEREO' else if (ch == 6) '5.1' else if (ch == 8) '7.1' else if (ch > 2) '$ch CH',
     ];
-    if (mounted) setState(() => _badges = b);
-    if (b.isEmpty && mounted) _scheduleBadges(); // stream not ready yet
   }
 
   // ------------------------------------------------------------ remote keys
@@ -322,12 +327,17 @@ class _TvHomeState extends State<TvHome> {
 
       case _Mode.info:
         final tiles = _tiles();
-        if (k == LogicalKeyboardKey.arrowLeft) {
+        if (!_tilesOn &&
+            (k == LogicalKeyboardKey.arrowLeft || k == LogicalKeyboardKey.arrowRight)) {
+          _showInfo(); // info without strip: ◀▶ bring the strip up
+        } else if (k == LogicalKeyboardKey.arrowLeft) {
           setState(() => _tile = (_tile - 1).clamp(0, tiles.length - 1).toInt());
-          _showInfo(focusTiles: false);
+          _showInfo(keepTile: true);
+          _scrollTiles();
         } else if (k == LogicalKeyboardKey.arrowRight) {
           setState(() => _tile = (_tile + 1).clamp(0, tiles.length - 1).toInt());
-          _showInfo(focusTiles: false);
+          _showInfo(keepTile: true);
+          _scrollTiles();
         } else if (_isUp(k)) {
           _zap(-1);
         } else if (_isDown(k)) {
@@ -379,7 +389,9 @@ class _TvHomeState extends State<TvHome> {
         _showInfo();
       case _Mode.info:
         final tiles = _tiles();
-        if (_tile == 0) {
+        if (!_tilesOn) {
+          _showInfo();
+        } else if (_tile == 0) {
           _openGuide();
         } else if (_tile < tiles.length) {
           final c = tiles[_tile]!;
@@ -388,14 +400,14 @@ class _TvHomeState extends State<TvHome> {
             _rebuildList();
           }
           _play(c, showInfo: false);
-          _showInfo();
+          _showInfo(keepTile: true);
         }
       case _Mode.guide:
         final c = _guideKey.currentState?.selected;
         if (c == null) return;
         if (c.id == _core.channel?.id) {
           setState(() => _mode = _Mode.play); // 2nd OK: fullscreen
-          _showInfo(focusTiles: false);
+          _showInfo(tiles: false);
         } else {
           _play(c, showInfo: false); // 1st OK: play in the preview
         }
@@ -434,7 +446,10 @@ class _TvHomeState extends State<TvHome> {
     _infoTimer?.cancel();
     _toastTimer?.cancel();
     _clock?.cancel();
-    _badgeTimer?.cancel();
+    for (final x in _subs) {
+      x.cancel();
+    }
+    _tileCtrl.dispose();
     _core.dispose();
     _focus.dispose();
     _catCtrl.dispose();
@@ -727,7 +742,10 @@ class _TvHomeState extends State<TvHome> {
                           style: const TextStyle(
                               color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 8),
-                      Row(children: [
+                      // fixed height: badges appearing must not move the text
+                      SizedBox(
+                        height: 30,
+                        child: Row(children: [
                         if (nn.cur != null) ...[
                           Text('${fmtMs(nn.cur!.start)} – ${fmtMs(nn.cur!.stop)}',
                               style: const TextStyle(color: Colors.white70, fontSize: 17)),
@@ -761,8 +779,9 @@ class _TvHomeState extends State<TvHome> {
                             padding: EdgeInsets.only(left: 8),
                             child: Icon(Icons.star_rounded, color: kAccent, size: 20),
                           ),
-                        for (final b in _badges) _badge(b),
+                        for (final b in _badgesNow()) _badge(b),
                       ]),
+                      ),
                       if (nn.next != null) ...[
                         const SizedBox(height: 8),
                         Text(
@@ -796,16 +815,19 @@ class _TvHomeState extends State<TvHome> {
                   ]);
                 }),
               ),
+              if (_tilesOn) ...[
               const SizedBox(height: 18),
               SizedBox(
                 height: 112,
                 child: ListView.separated(
+                  controller: _tileCtrl,
                   scrollDirection: Axis.horizontal,
                   itemCount: tiles.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 14),
                   itemBuilder: (_, i) => _tileWidget(tiles[i], i == _tile, now),
                 ),
               ),
+              ],
             ],
           ),
         ),
