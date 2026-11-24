@@ -44,7 +44,7 @@ List<Channel> demoChannels() {
         name: n,
         epgId: i % 9 == 8 ? '' : 'demo$i', // a few channels without guide
         categoryId: cat,
-        num: i + 1,
+        number: i + 1,
         url: _streams[i % _streams.length],
       ));
       i++;
