@@ -12,6 +12,10 @@ key()  { adb shell input keyevent "$1"; sleep "${2:-2}"; }
 keys() { local k=$1 c=$2; for _ in $(seq "$c"); do adb shell input keyevent "$k"; sleep 0.9; done; sleep 1.5; }
 
 adb wait-for-device
+# let the freshly booted emulator settle (boot-time background work starves
+# apps of CPU and causes false "isn't responding" dialogs)
+until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ]; do sleep 2; done
+sleep 45
 # Look like a 1080p Google TV: 1920x1080 at xhdpi (= 960x540 dp)
 adb shell wm size 1920x1080
 adb shell wm density 320
