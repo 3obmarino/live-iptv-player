@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../models.dart';
+import 'channel_check_screen.dart';
 import 'common.dart';
 import 'epg_settings_screen.dart';
 import 'player_settings_screen.dart';
@@ -102,6 +103,11 @@ class MenuScreen extends StatelessWidget {
                   builder: (_) => const EpgSettingsScreen()))),
           item(Icons.dark_mode_outlined, 'Theme', _themeLabel(s.settings.themeMode),
               () => _pickTheme(context)),
+          if (!Platform.isAndroid)
+            item(Icons.fact_check_outlined, 'Check channels',
+                'Find channels that don\'t work',
+                () => Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => const ChannelCheckScreen()))),
           item(Icons.system_update_alt_rounded, 'Check for updates', 'Version $appVersion',
               () async {
             if (appBuild == 0) {
