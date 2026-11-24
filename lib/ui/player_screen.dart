@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
@@ -199,13 +200,16 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     }
   }
 
+  Timer? _saveTimer;
+
   void _setVolume(double v, {bool persist = false}) {
     final nv = v.clamp(0.0, 100.0).toDouble();
     setState(() => _volume = nv);
     _player.setVolume(nv);
     if (persist && nv > 0) {
       AppState.I.settings.volume = nv;
-      AppState.I.save();
+      _saveTimer?.cancel();
+      _saveTimer = Timer(const Duration(milliseconds: 800), AppState.I.save);
     }
   }
 
@@ -257,6 +261,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    if (_saveTimer?.isActive ?? false) {
+      _saveTimer!.cancel();
+      AppState.I.save();
+    }
     for (final s in _subs) {
       s.cancel();
     }
@@ -309,7 +317,16 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                 child: MouseRegion(
                   cursor: _controls ? SystemMouseCursors.basic : SystemMouseCursors.none,
                   onHover: (_) => _showControls(),
-                  child: Stack(
+                  // mouse wheel over the video = volume, like VLC
+                  child: Listener(
+                   onPointerSignal: (e) {
+                    if (e is PointerScrollEvent && e.scrollDelta.dy != 0) {
+                      GestureBinding.instance.pointerSignalResolver.register(e, (_) {
+                        _volumeStep(e.scrollDelta.dy < 0 ? 5 : -5);
+                      });
+                    }
+                   },
+                   child: Stack(
                     fit: StackFit.expand,
                     children: [
                       GestureDetector(
@@ -332,6 +349,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                       ),
                       if (_status != null) Center(child: _statusCard()),
                     ],
+                   ),
                   ),
                 ),
               ),
