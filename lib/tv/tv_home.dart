@@ -22,7 +22,7 @@ class _Cat {
 
 /// Google TV home: always-on fullscreen video with remote-driven overlays.
 ///
-/// Playing:  ▲▼ / CH± zap · OK channel list · ▶ or BACK guide · BACK×2 exit
+/// Playing:  ▲▼ / CH± zap · OK channel list · ▶ or BACK guide · HOME leaves
 /// List:     ▲▼ move · OK play · hold OK favourite · ◀ categories · ▶ guide
 /// Guide:    ▲▼ channel · ◀▶ programme · OK play
 class TvHome extends StatefulWidget {
@@ -50,7 +50,6 @@ class _TvHomeState extends State<TvHome> {
   Timer? _bannerTimer;
   String? _toast;
   Timer? _toastTimer;
-  DateTime? _lastBack;
   bool _okDown = false;
   bool _okLong = false;
   Timer? _clock;
@@ -211,13 +210,8 @@ class _TvHomeState extends State<TvHome> {
       setState(() => _mode = _Mode.play);
       return;
     }
-    final now = DateTime.now();
-    if (_lastBack != null && now.difference(_lastBack!) < const Duration(seconds: 2)) {
-      SystemNavigator.pop();
-      return;
-    }
-    _lastBack = now;
-    _showToast('Press BACK again to exit');
+    // Watching: BACK opens the full-screen TV guide. Leave the app with HOME.
+    _openGuide();
   }
 
   // ------------------------------------------------------------ remote keys

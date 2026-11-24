@@ -8,6 +8,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../app_state.dart';
+import '../player_core.dart' show videoConfig, tuneForLive;
 import '../models.dart' show Channel;
 import 'common.dart';
 
@@ -60,11 +61,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _index = (widget.index < 0 || widget.index >= widget.playlist.length) ? 0 : widget.index;
     _volume = AppState.I.settings.volume;
     _player = Player();
-    _controller = VideoController(
-      _player,
-      configuration: VideoControllerConfiguration(
-          enableHardwareAcceleration: AppState.I.settings.hwdec),
-    );
+    _controller = VideoController(_player, configuration: videoConfig());
     _subs.add(_player.stream.error.listen(_onError));
     _subs.add(_player.stream.completed.listen((done) {
       if (done) _scheduleRetry('The stream ended');
@@ -108,16 +105,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   }
 
   Future<void> _configure() async {
-    final platform = _player.platform;
-    if (platform is NativePlayer) {
-      try {
-        // Let ffmpeg reconnect dropped HTTP streams by itself first.
-        await platform.setProperty(
-            'stream-lavf-o', 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5');
-        final ua = AppState.I.settings.userAgent;
-        if (ua.isNotEmpty) await platform.setProperty('user-agent', ua);
-      } catch (_) {}
-    }
+    await tuneForLive(_player);
     await _player.setVolume(_volume);
   }
 

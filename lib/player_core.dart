@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
@@ -12,11 +13,7 @@ import 'models.dart';
 class PlayerCore extends ChangeNotifier {
   PlayerCore() {
     player = Player();
-    controller = VideoController(
-      player,
-      configuration: VideoControllerConfiguration(
-          enableHardwareAcceleration: AppState.I.settings.hwdec),
-    );
+    controller = VideoController(player, configuration: videoConfig());
     _subs.add(player.stream.error.listen(_onError));
     _subs.add(player.stream.completed.listen((done) {
       if (done) _scheduleRetry('The stream ended');
@@ -46,17 +43,7 @@ class PlayerCore extends ChangeNotifier {
   Timer? _retryTimer;
   bool _disposed = false;
 
-  Future<void> _configure() async {
-    final platform = player.platform;
-    if (platform is NativePlayer) {
-      try {
-        await platform.setProperty(
-            'stream-lavf-o', 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5');
-        final ua = AppState.I.settings.userAgent;
-        if (ua.isNotEmpty) await platform.setProperty('user-agent', ua);
-      } catch (_) {}
-    }
-  }
+  Future<void> _configure() => tuneForLive(player);
 
   Future<void> play(Channel c) async {
     await _ready;
@@ -108,5 +95,50 @@ class PlayerCore extends ChangeNotifier {
     _retryTimer?.cancel();
     player.dispose();
     super.dispose();
+  }
+}
+
+/// Android / Google TV: let the hardware decoder draw straight onto the
+/// screen (mediacodec_embed) instead of copying every frame through the GPU.
+/// That copy is what makes 1080p/4K live TV stutter on TV boxes.
+VideoControllerConfiguration videoConfig() {
+  final hw = AppState.I.settings.hwdec;
+  if (Platform.isAndroid && hw) {
+    return const VideoControllerConfiguration(
+      vo: 'mediacodec_embed',
+      hwdec: 'mediacodec',
+    );
+  }
+  return VideoControllerConfiguration(enableHardwareAcceleration: hw);
+}
+
+/// mpv settings for smooth, long-running live streams.
+Future<void> tuneForLive(Player player) async {
+  final platform = player.platform;
+  if (platform is! NativePlayer) return;
+  final props = <String, String>{
+    // reconnect dropped HTTP streams inside ffmpeg first
+    'stream-lavf-o': 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5',
+    // a few seconds of buffer smooths out network hiccups
+    'cache': 'yes',
+    'cache-secs': '8',
+    'demuxer-readahead-secs': '8',
+    'demuxer-max-bytes': '64MiB',
+    'demuxer-max-back-bytes': '8MiB',
+    // drop late frames instead of slowing down; keep audio steady
+    'framedrop': 'vo',
+    'audio-buffer': '0.5',
+    // decode audio ourselves (no passthrough): passthrough to soundbars /
+    // eARC is a common cause of audio going silent after a while
+    'audio-spdif': '',
+    // live streams: never stop at "end of file" on a short read
+    'keep-open': 'no',
+  };
+  final ua = AppState.I.settings.userAgent;
+  if (ua.isNotEmpty) props['user-agent'] = ua;
+  for (final e in props.entries) {
+    try {
+      await platform.setProperty(e.key, e.value);
+    } catch (_) {}
   }
 }
