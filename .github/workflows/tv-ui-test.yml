@@ -1,0 +1,85 @@
+name: TV UI test (emulator)
+
+# Builds the Google TV app in demo mode, drives it with remote-control key
+# presses on an Android emulator at 1080p and publishes the screenshots to
+# the ui-test-shots branch. Does not block releases.
+on:
+  push:
+    branches: [main]
+    paths: ['lib/**', 'tools/**', '.github/workflows/tv-ui-test.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tv-ui-test
+  cancel-in-progress: true
+
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android project (TV manifest)
+        run: |
+          flutter create --platforms=android --project-name live_tv_player --org dk.livetvplayer .
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-feature android:name="android.software.leanback" android:required="false"/>\n    <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>\n    <application|' $M
+          sed -i 's|<application|<application android:usesCleartextTraffic="true" android:banner="@drawable/banner"|' $M
+          sed -i 's|<category android:name="android.intent.category.LAUNCHER"/>|<category android:name="android.intent.category.LAUNCHER"/>\n                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>|' $M
+          sed -i 's|android:label="live_tv_player"|android:label="Live TV"|' $M
+          rm -rf android/app/src/main/res/mipmap-anydpi-v26
+          cp -r branding/android/mipmap-* branding/android/drawable-* android/app/src/main/res/
+
+      - run: flutter pub get
+
+      - name: Build demo TV APK for the emulator (x86_64)
+        run: |
+          flutter build apk --release --target-platform android-x64 --dart-define=TV=true --dart-define=DEMO=true
+          cp build/app/outputs/flutter-apk/app-release.apk app.apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run remote-control script on the emulator
+        uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          ram-size: 4096M
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: bash tools/tv_ui_test.sh
+
+      - name: Publish screenshots to the ui-test-shots branch
+        if: always()
+        run: |
+          test -d shots || exit 0
+          cd shots
+          echo "Commit ${GITHUB_SHA} – run ${GITHUB_RUN_ID}" > README.md
+          git init -q -b ui-test-shots
+          git config user.name "tv-ui-test"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -qm "UI test screenshots for ${GITHUB_SHA}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ui-test-shots

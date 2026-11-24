@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'api.dart';
+import 'demo.dart';
 import 'epg.dart';
 import 'models.dart';
 import 'secure_store.dart';
@@ -49,6 +50,26 @@ class AppState extends ChangeNotifier {
 
   Future<void> init() async {
     await Store.init();
+    if (kDemo) {
+      // Emulator test build: invented channels and guide, no network setup.
+      profiles = [
+        Profile(
+          id: 'demo',
+          name: 'Demo',
+          type: ProfileType.m3u,
+          m3uUrl: 'demo',
+          channelsUpdated: DateTime.now(),
+          epgUpdated: DateTime.now(),
+        )
+      ];
+      activeId = 'demo';
+      categories = demoCategories();
+      channels = demoChannels();
+      _epgRaw = demoEpg(channels);
+      _applyShift();
+      notifyListeners();
+      return;
+    }
     final j = await Store.readJson('state.json');
     if (j is Map<String, dynamic>) {
       final sj = j['settings'];
@@ -115,6 +136,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> save() async {
+    if (kDemo) return;
     final secured = <String>{};
     for (final p in profiles) {
       if (await SecretStore.write(p.id, p.secrets)) secured.add(p.id);
@@ -132,6 +154,7 @@ class AppState extends ChangeNotifier {
   // -------------------------------------------------------------- scheduler
 
   void _tick() {
+    if (kDemo) return;
     final p = active;
     if (p == null) return;
     final now = DateTime.now();
@@ -180,6 +203,7 @@ class AppState extends ChangeNotifier {
 
   /// Returns an error message, or null on success.
   Future<String?> refreshChannels(Profile p, {bool silent = false}) async {
+    if (kDemo) return null;
     if (loadingChannels) return null;
     loadingChannels = true;
     _lastChannelAttempt = DateTime.now();
@@ -217,6 +241,7 @@ class AppState extends ChangeNotifier {
   /// Downloads and parses the EPG for the active profile.
   /// Returns an error message, or null on success.
   Future<String?> refreshEpg() async {
+    if (kDemo) return null;
     final p = active;
     if (p == null) return 'No profile selected';
     if (epgLoading) return null;
