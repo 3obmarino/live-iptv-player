@@ -22,6 +22,11 @@ Future<void> main() async {
     await windowManager.setTitle(appTitle);
     await windowManager.setMinimumSize(const Size(960, 600));
   }
+  if (kTvBuild) {
+    // Remote control = always draw focus highlights (Flutter otherwise
+    // waits until it has decided the device is keyboard-driven).
+    FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+  }
   await AppState.I.init();
   Updater.I.start();
   runApp(const TvApp());
