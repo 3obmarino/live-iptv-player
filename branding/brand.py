@@ -42,8 +42,8 @@ def banner_a(w=320, h=180):
     # icon + wordmark, faint rain behind
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 320 180">
 <rect width="320" height="180" fill="{K}"/>{rain_bg(320,180,op=0.13)}
-{rain_icon(22, 44, 92)}
-<text x="128" y="106" {FONT} font-size="44" fill="#FFFFFF" letter-spacing="-1">Live<tspan fill="{G}" dx="3">TV</tspan></text>
+{rain_icon(33, 44, 92)}
+<text x="121" y="106" {FONT} font-size="44" fill="#FFFFFF" letter-spacing="-1">Live<tspan fill="{G}" dx="3">TV</tspan></text>
 </svg>'''
 
 def banner_b(w=320, h=180):
