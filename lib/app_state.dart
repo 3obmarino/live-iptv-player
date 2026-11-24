@@ -8,6 +8,7 @@ import 'demo.dart';
 import 'epg.dart';
 import 'models.dart';
 import 'secure_store.dart';
+import 'logo_cache.dart';
 import 'storage.dart';
 
 /// Single app-wide state object. Widgets listen with ListenableBuilder.
@@ -125,6 +126,7 @@ class AppState extends ChangeNotifier {
           Channel.fromJson((c as Map).cast<String, dynamic>())
       ];
     }
+    LogoCache.prefetch(channels.map((c) => c.logo));
     final cached = await readEpgCache(Store.file('epg_${p.id}.json').path);
     if (cached != null) _epgRaw = cached;
     _applyShift();
@@ -223,6 +225,7 @@ class AppState extends ChangeNotifier {
       if (p.id == activeId) {
         categories = r.categories;
         channels = r.channels;
+        LogoCache.prefetch(channels.map((c) => c.logo));
         // Channel list changed: rebuild the EPG lookup memo.
         _applyShift();
       }

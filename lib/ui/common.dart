@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
+import '../logo_cache.dart';
 import '../models.dart';
 import '../updater.dart' show kTvBuild;
 
@@ -143,40 +144,97 @@ void toast(BuildContext context, String msg) {
 
 // -------------------------------------------------------------- widgets
 
-class ChannelLogo extends StatelessWidget {
+class ChannelLogo extends StatefulWidget {
   const ChannelLogo(this.channel, {super.key, this.size = 44});
   final Channel channel;
   final double size;
 
   @override
+  State<ChannelLogo> createState() => _ChannelLogoState();
+}
+
+class _ChannelLogoState extends State<ChannelLogo> {
+  ImageProvider? _image;
+  bool _failed = false;
+  bool _fade = false; // only fade logos that arrived from the network
+
+  @override
+  void initState() {
+    super.initState();
+    _resolve();
+  }
+
+  @override
+  void didUpdateWidget(ChannelLogo old) {
+    super.didUpdateWidget(old);
+    if (old.channel.logo != widget.channel.logo) _resolve();
+  }
+
+  void _resolve() {
+    final url = widget.channel.logo;
+    _failed = false;
+    _fade = false;
+    _image = url.isEmpty ? null : LogoCache.cached(url);
+    if (url.isEmpty || _image != null) return;
+    if (LogoCache.failed(url)) {
+      _failed = true;
+      return;
+    }
+    LogoCache.fetch(url).then((f) {
+      if (!mounted || widget.channel.logo != url) return;
+      setState(() {
+        if (f == null) {
+          _failed = true;
+        } else {
+          _image = LogoCache.provider(f);
+          _fade = true;
+        }
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final size = widget.size;
     final cs = Theme.of(context).colorScheme;
-    final fallback = Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8)),
-      child: Text(
-        channel.name.isEmpty ? '?' : channel.name.substring(0, 1).toUpperCase(),
-        style: TextStyle(
-            color: cs.onSurfaceVariant,
-            fontWeight: FontWeight.w700,
-            fontSize: size * 0.38),
-      ),
-    );
-    if (channel.logo.isEmpty) return fallback;
+    final c = widget.channel;
+    Widget fallback() => Container(
+          width: size,
+          height: size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(8)),
+          child: Text(
+            c.name.isEmpty ? '?' : c.name.substring(0, 1).toUpperCase(),
+            style: TextStyle(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+                fontSize: size * 0.38),
+          ),
+        );
+    if (c.logo.isEmpty || _failed) return fallback();
+    final img = _image;
     return SizedBox(
       width: size,
       height: size,
-      child: Image.network(
-        channel.logo,
-        fit: BoxFit.contain,
-        cacheWidth: (size * 2).round(),
-        gaplessPlayback: true,
-        errorBuilder: (_, __, ___) => fallback,
-      ),
+      child: img == null
+          ? null // still downloading: keep the space empty, no letter flash
+          : Image(
+              image: img,
+              fit: BoxFit.contain,
+              gaplessPlayback: true,
+              filterQuality: FilterQuality.medium,
+              errorBuilder: (_, __, ___) => fallback(),
+              frameBuilder: (_, child, frame, sync) {
+                if (sync || !_fade) return child;
+                return AnimatedOpacity(
+                  opacity: frame == null ? 0 : 1,
+                  duration: const Duration(milliseconds: 180),
+                  child: child,
+                );
+              },
+            ),
     );
   }
 }
