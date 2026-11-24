@@ -20,9 +20,13 @@ class ProfilesScreen extends StatelessWidget {
             automaticallyImplyLeading: canPop,
             title: const Text('Profiles'),
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            backgroundColor: accentOf(context),
-            foregroundColor: onAccentOf(context),
+          floatingActionButton: FilledButton.icon(
+            // Focused on first start, so OK on the remote opens it directly.
+            autofocus: s.profiles.isEmpty,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+              textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            ),
             onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const EditProfileScreen())),
             icon: const Icon(Icons.add),

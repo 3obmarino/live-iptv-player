@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../models.dart';
+import '../updater.dart' show kTvBuild;
 
 /// "Matrix" green. Bright on dark surfaces; a deeper green on light ones
 /// so text and icons stay readable. Text on top of kAccent uses kOnAccent.
@@ -88,9 +89,22 @@ ThemeData buildTheme(Brightness b) {
       unselectedLabelTextStyle: TextStyle(color: muted, fontSize: 12),
     ),
     tooltipTheme: const TooltipThemeData(waitDuration: Duration(milliseconds: 500)),
+    // Clear focus for remotes and keyboards: a thick ring on the focused
+    // button, and a stronger highlight on focused list rows.
+    focusColor: kTvBuild ? text.withOpacity(0.18) : null,
+    filledButtonTheme: FilledButtonThemeData(style: _focusRing(text)),
+    outlinedButtonTheme: OutlinedButtonThemeData(style: _focusRing(text)),
+    textButtonTheme: TextButtonThemeData(style: _focusRing(text)),
+    iconButtonTheme: IconButtonThemeData(style: _focusRing(text)),
   );
   return base;
 }
+
+ButtonStyle _focusRing(Color ring) => ButtonStyle(
+      side: WidgetStateProperty.resolveWith((states) => states.contains(WidgetState.focused)
+          ? BorderSide(color: ring, width: kTvBuild ? 4 : 2)
+          : null),
+    );
 
 class AppScrollBehavior extends MaterialScrollBehavior {
   const AppScrollBehavior();
