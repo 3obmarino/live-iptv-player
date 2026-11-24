@@ -499,15 +499,26 @@ class _TvHomeState extends State<TvHome> {
                     preview: preview,
                   ),
                 ),
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                left: videoRect.left,
-                top: videoRect.top,
-                width: videoRect.width,
-                height: videoRect.height,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(guideOn ? 10 : 0),
+              // The video surface always stays full-screen; the guide preview
+              // is the same surface scaled down. Resizing the real surface
+              // makes mpv reconfigure its output and blocked the UI thread.
+              Positioned.fill(
+                child: TweenAnimationBuilder<Rect?>(
+                  tween: RectTween(end: videoRect),
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  builder: (context, r, child) {
+                    final rr = r ?? videoRect;
+                    final sc = (rr.width / w).clamp(0.05, 1.0).toDouble();
+                    return Transform(
+                      transform: Matrix4.translationValues(rr.left, rr.top, 0)
+                        ..multiply(Matrix4.diagonal3Values(sc, sc, 1)),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(sc < 0.99 ? 10 / sc : 0),
+                        child: child,
+                      ),
+                    );
+                  },
                   child: ColoredBox(
                     color: Colors.black,
                     child: Video(controller: _core.controller, controls: NoVideoControls),

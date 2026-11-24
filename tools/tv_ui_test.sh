@@ -66,5 +66,10 @@ key KEYCODE_BACK 2;                     shot D5_back
 key KEYCODE_BACK 3;                     shot D6_back_to_tv
 
 adb logcat -d > "$OUT/logcat_full.txt" || true
+# Android's freeze ("not responding") reports with the blocking stack traces
+adb root >/dev/null 2>&1 || true; sleep 3
+for f in $(adb shell ls /data/anr 2>/dev/null | tr -d '\r'); do
+  adb shell cat "/data/anr/$f" > "$OUT/anr_$f.txt" 2>/dev/null || true
+done
 grep -E "flutter|AndroidRuntime|FATAL|mpv|media_kit" "$OUT/logcat_full.txt" | tail -400 > "$OUT/logcat_app.txt" || true
 echo "done: $n screenshots"
