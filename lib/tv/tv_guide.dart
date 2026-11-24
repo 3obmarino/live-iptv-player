@@ -7,73 +7,94 @@ import '../app_state.dart';
 import '../models.dart';
 import '../ui/common.dart';
 
-/// Remote-driven TV guide. The parent forwards key presses to [handleKey].
-/// ↑/↓ channel, ←/→ programme, OK plays the channel.
+/// Full-screen TV guide (TiviMate style). The live video is drawn by the
+/// parent inside [preview]; this widget paints everything around it:
+/// programme details to the right of the preview, then date/time, a time
+/// ruler and the channel × programme grid.
+///
+/// The parent forwards remote keys to [TvGuideState.handleKey].
 class TvGuide extends StatefulWidget {
   const TvGuide({
     super.key,
     required this.channels,
     required this.initialIndex,
     required this.playingId,
-    required this.onPlay,
+    required this.categoryName,
+    required this.preview,
   });
   final List<Channel> channels;
   final int initialIndex;
   final String? playingId;
-  final void Function(Channel) onPlay;
+  final String categoryName;
+
+  /// Area (in this widget's coordinates) left free for the video preview.
+  final Rect preview;
 
   @override
   State<TvGuide> createState() => TvGuideState();
 }
 
 class TvGuideState extends State<TvGuide> {
-  static const double rowH = 58;
-  static const double chW = 190;
-  static const int windowMin = 150; // 2½ hours on screen
+  static const double rowH = 46;
+  double chW = 300; // narrower when the sidebar is open
+  int windowMin = 150; // 2½ h across the grid (1½ h when narrow)
   static const int halfHour = 30 * 60000;
 
   late int _row;
   int _first = 0;
-  int _visible = 6;
-  late int _winStart; // epoch ms
-  late int _focusTime; // keeps the "time column" when moving up/down
+  int _visible = 8;
+  late int _winStart;
+  late int _focusTime;
   int _prog = -1;
 
   int get _winEnd => _winStart + windowMin * 60000;
-
   static int _floor30(int ms) => ms - (ms % halfHour);
+  int get _minStart => _floor30(DateTime.now().millisecondsSinceEpoch);
 
   List<Programme> _progs(int row) => AppState.I.epg.forChannel(widget.channels[row]);
+
+  Channel? get selected => widget.channels.isEmpty ? null : widget.channels[_row];
 
   @override
   void initState() {
     super.initState();
+    _reset();
+  }
+
+  void _reset() {
     final now = DateTime.now().millisecondsSinceEpoch;
     _row = widget.initialIndex.clamp(0, math.max(0, widget.channels.length - 1)).toInt();
+    _first = math.max(0, _row - 3);
     _winStart = _floor30(now);
     _focusTime = now;
     _pickProgAt(_focusTime);
-    _first = math.max(0, _row - 2);
+  }
+
+  @override
+  void didUpdateWidget(TvGuide old) {
+    super.didUpdateWidget(old);
+    if (!_sameChannels(old.channels, widget.channels)) _reset();
+  }
+
+  static bool _sameChannels(List<Channel> a, List<Channel> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
   }
 
   void _pickProgAt(int t) {
-    if (widget.channels.isEmpty) {
-      _prog = -1;
-      return;
-    }
-    final ps = _progs(_row);
     _prog = -1;
+    if (widget.channels.isEmpty) return;
+    final ps = _progs(_row);
     for (var i = 0; i < ps.length; i++) {
-      if (ps[i].start <= t && t < ps[i].stop) {
-        _prog = i;
-        return;
-      }
-      if (ps[i].start > t) {
+      if (ps[i].stop > t) {
         _prog = i;
         return;
       }
     }
-    if (ps.isNotEmpty && ps.last.stop <= t) _prog = ps.length - 1;
   }
 
   void _ensureRowVisible() {
@@ -81,25 +102,33 @@ class TvGuideState extends State<TvGuide> {
     if (_row >= _first + _visible) _first = _row - _visible + 1;
   }
 
-  void _ensureProgVisible({required bool movingRight}) {
+  void _followProg({required bool right}) {
     final ps = _progs(_row);
     if (_prog < 0 || _prog >= ps.length) return;
     final p = ps[_prog];
-    final tail = _winEnd - halfHour;
-    if (p.start >= tail || p.stop <= _winStart + 5 * 60000) {
-      _winStart = movingRight ? _floor30(p.start) - halfHour : _floor30(p.start);
-    } else if (p.start < _winStart && !movingRight) {
-      _winStart = _floor30(p.start);
+    if (right && p.start >= _winEnd - halfHour) {
+      _winStart = _floor30(p.start) - halfHour;
+    } else if (!right && p.start < _winStart) {
+      _winStart = math.max(_minStart, _floor30(p.start));
     }
     _focusTime = math.max(p.start, _winStart);
   }
 
-  /// Returns true if the key was used.
+  /// True when ◀ should leave the guide (selection is at "now").
+  bool get atLeftEdge {
+    if (widget.channels.isEmpty) return true;
+    if (_winStart > _minStart) return false;
+    final ps = _progs(_row);
+    if (_prog <= 0 || _prog >= ps.length) return true;
+    return ps[_prog - 1].stop <= DateTime.now().millisecondsSinceEpoch;
+  }
+
   bool handleKey(LogicalKeyboardKey k) {
     if (widget.channels.isEmpty) return false;
+    final n = widget.channels.length;
     if (k == LogicalKeyboardKey.arrowDown || k == LogicalKeyboardKey.channelDown) {
       setState(() {
-        _row = (_row + 1) % widget.channels.length;
+        _row = (_row + 1) % n;
         _pickProgAt(_focusTime);
         _ensureRowVisible();
       });
@@ -107,7 +136,7 @@ class TvGuideState extends State<TvGuide> {
     }
     if (k == LogicalKeyboardKey.arrowUp || k == LogicalKeyboardKey.channelUp) {
       setState(() {
-        _row = (_row - 1 + widget.channels.length) % widget.channels.length;
+        _row = (_row - 1 + n) % n;
         _pickProgAt(_focusTime);
         _ensureRowVisible();
       });
@@ -118,7 +147,7 @@ class TvGuideState extends State<TvGuide> {
       setState(() {
         if (_prog >= 0 && _prog < ps.length - 1) {
           _prog++;
-          _ensureProgVisible(movingRight: true);
+          _followProg(right: true);
         } else {
           _winStart += halfHour;
           _focusTime = math.max(_focusTime, _winStart);
@@ -127,13 +156,13 @@ class TvGuideState extends State<TvGuide> {
       return true;
     }
     if (k == LogicalKeyboardKey.arrowLeft) {
-      final ps = _progs(_row);
+      if (atLeftEdge) return false;
       setState(() {
         if (_prog > 0) {
           _prog--;
-          _ensureProgVisible(movingRight: false);
-        } else if (ps.isEmpty) {
-          _winStart -= halfHour;
+          _followProg(right: false);
+        } else {
+          _winStart = math.max(_minStart, _winStart - halfHour);
           _focusTime = _winStart;
         }
       });
@@ -142,147 +171,224 @@ class TvGuideState extends State<TvGuide> {
     return false;
   }
 
-  void ok() {
-    if (widget.channels.isEmpty) return;
-    widget.onPlay(widget.channels[_row]);
+  static String dateTimeLabel(DateTime d) {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${days[d.weekday - 1]} ${d.day} ${months[d.month - 1]}  ${fmtTime(d)}';
   }
-
-  Channel? get selectedChannel => widget.channels.isEmpty ? null : widget.channels[_row];
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now().millisecondsSinceEpoch;
     if (widget.channels.isEmpty) {
       return const ColoredBox(
-        color: Color(0xF2111114),
+        color: Color(0xFF101114),
         child: Center(
-            child: Text('No channels', style: TextStyle(color: Colors.white70, fontSize: 18))),
+            child: Text('No channels in this category',
+                style: TextStyle(color: Colors.white70, fontSize: 18))),
       );
     }
+    if (_winStart < _minStart) _winStart = _minStart;
+    final ch = widget.channels[_row];
     final ps = _progs(_row);
     final sel = (_prog >= 0 && _prog < ps.length) ? ps[_prog] : null;
-    final ch = widget.channels[_row];
+    final fav = AppState.I.isFavorite(ch);
+    final pv = widget.preview;
 
     return ColoredBox(
-      color: const Color(0xF2111114),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(40, 28, 40, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ---- details of the selected programme
-            SizedBox(
-              height: 118,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(ch.name,
-                      style: const TextStyle(color: kAccent, fontSize: 15, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 4),
-                  Text(sel?.title ?? 'No TV guide for this channel',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
-                  if (sel != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                        '${dayLabel(DateTime.fromMillisecondsSinceEpoch(sel.start))}  '
-                        '${fmtMs(sel.start)} – ${fmtMs(sel.stop)}'
-                        '${sel.isLiveAt(now) ? '   ·   Live now' : ''}',
-                        style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                    const SizedBox(height: 6),
-                    Text(sel.desc,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white60, fontSize: 13.5, height: 1.35)),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: LayoutBuilder(builder: (context, box) {
-                _visible = math.max(1, ((box.maxHeight - 30) / rowH).floor());
-                _ensureRowVisible();
-                final gridW = box.maxWidth - chW;
-                final ppm = gridW / windowMin;
-                double x(int ms) => (ms - _winStart) / 60000 * ppm;
-                final last = math.min(widget.channels.length, _first + _visible);
+      color: const Color(0xFF101114),
+      child: LayoutBuilder(builder: (context, box) {
+        final gridTop = pv.bottom + 14;
+        final rowsH = box.maxHeight - gridTop - 34 - 6;
+        _visible = math.max(1, (rowsH / rowH).floor());
+        _ensureRowVisible();
+        chW = math.min(300.0, box.maxWidth * 0.32);
+        final gridW = box.maxWidth - 32 - chW;
+        windowMin = gridW < 520 ? 90 : 150;
+        final ppm = gridW / windowMin;
+        double x(int ms) => (ms - _winStart) / 60000 * ppm;
+        final last = math.min(widget.channels.length, _first + _visible);
 
-                return Stack(children: [
-                  Column(children: [
-                    // time header
-                    SizedBox(
-                      height: 30,
-                      child: Stack(children: [
-                        for (var m = 0; m <= windowMin; m += 30)
-                          Positioned(
-                            left: chW + m * ppm + 6,
-                            top: 4,
-                            child: Text(
-                              fmtMs(_winStart + m * 60000),
-                              style: const TextStyle(color: Colors.white60, fontSize: 13),
-                            ),
-                          ),
-                      ]),
-                    ),
-                    for (var r = _first; r < last; r++)
+        return Stack(children: [
+          // ---------------------------------------------------- details
+          Positioned(
+            left: pv.right + 28,
+            right: 28,
+            top: pv.top,
+            height: pv.height,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(
+                    child: Text(sel?.title ?? ch.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 26, fontWeight: FontWeight.w700)),
+                  ),
+                  Icon(fav ? Icons.star_rounded : Icons.star_outline_rounded,
+                      color: fav ? kAccent : Colors.white54, size: 28),
+                ]),
+                const SizedBox(height: 8),
+                Row(children: [
+                  if (sel != null) ...[
+                    Text('${fmtMs(sel.start)} – ${fmtMs(sel.stop)}',
+                        style: const TextStyle(color: Colors.white70, fontSize: 16)),
+                    const SizedBox(width: 14),
+                    if (sel.isLiveAt(now)) ...[
                       SizedBox(
-                        height: rowH,
-                        child: Row(children: [
-                          SizedBox(
-                            width: chW,
-                            child: Row(children: [
-                              SizedBox(
-                                width: 34,
-                                child: Text('${r + 1}',
-                                    style: const TextStyle(color: Colors.white38, fontSize: 13)),
-                              ),
-                              ChannelLogo(widget.channels[r], size: 34),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(widget.channels[r].name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                        color: r == _row ? Colors.white : Colors.white70,
-                                        fontSize: 14.5,
-                                        fontWeight:
-                                            r == _row ? FontWeight.w700 : FontWeight.w500)),
-                              ),
-                              if (widget.channels[r].id == widget.playingId)
-                                const Padding(
-                                  padding: EdgeInsets.only(right: 8),
-                                  child: Icon(Icons.volume_up_rounded, color: kAccent, size: 16),
-                                ),
-                            ]),
+                        width: 70,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: sel.progressAt(now),
+                            minHeight: 3,
+                            color: kAccent,
+                            backgroundColor: Colors.white24,
                           ),
-                          Expanded(child: _progRow(r, now, x, gridW)),
-                        ]),
+                        ),
                       ),
-                  ]),
-                  // now line
+                      const SizedBox(width: 14),
+                      Text('${((sel.stop - now) / 60000).ceil()} min',
+                          style: const TextStyle(color: Colors.white70, fontSize: 16)),
+                    ] else
+                      Text('${((sel.stop - sel.start) / 60000).round()} min',
+                          style: const TextStyle(color: Colors.white70, fontSize: 16)),
+                  ],
+                  const Spacer(),
+                  Text(widget.categoryName,
+                      style: const TextStyle(color: Colors.white70, fontSize: 16)),
+                ]),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: Text(
+                    sel == null ? 'No TV guide for this channel' : sel.desc,
+                    overflow: TextOverflow.fade,
+                    style: const TextStyle(color: Colors.white70, fontSize: 15, height: 1.35),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ---------------------------------------------- header + ruler
+          Positioned(
+            left: 16,
+            right: 16,
+            top: gridTop,
+            height: 34,
+            child: Row(children: [
+              SizedBox(
+                width: chW,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(dateTimeLabel(DateTime.now()),
+                      style: const TextStyle(
+                          color: kAccent, fontSize: 18, fontWeight: FontWeight.w600)),
+                ),
+              ),
+              Expanded(
+                child: Stack(clipBehavior: Clip.none, children: [
+                  for (var m = 0; m < windowMin; m += 30)
+                    Positioned(
+                      left: m * ppm,
+                      top: 4,
+                      child: Text(fmtMs(_winStart + m * 60000),
+                          style: const TextStyle(color: Colors.white70, fontSize: 15)),
+                    ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Container(height: 1, color: Colors.white24),
+                  ),
                   if (now > _winStart && now < _winEnd)
                     Positioned(
-                      left: chW + x(now),
-                      top: 26,
-                      bottom: 0,
-                      child: Container(width: 2, color: Colors.redAccent),
+                      left: x(now) - 4,
+                      bottom: -4,
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: const BoxDecoration(color: kAccent, shape: BoxShape.circle),
+                      ),
                     ),
-                ]);
-              }),
-            ),
-            const SizedBox(height: 8),
-            const Text('OK  watch     ◀ ▶  programmes     ▲ ▼  channels     BACK  close',
-                style: TextStyle(color: Colors.white38, fontSize: 12.5)),
-          ],
-        ),
-      ),
+                ]),
+              ),
+            ]),
+          ),
+
+          // ------------------------------------------------------ rows
+          Positioned(
+            left: 16,
+            right: 16,
+            top: gridTop + 34 + 6,
+            bottom: 0,
+            child: Stack(children: [
+              Column(children: [
+                for (var r = _first; r < last; r++) _rowWidget(r, now, x),
+              ]),
+              if (now > _winStart && now < _winEnd)
+                Positioned(
+                  left: chW + x(now),
+                  top: 0,
+                  bottom: 0,
+                  child: IgnorePointer(
+                      child: Container(width: 2, color: kAccent.withOpacity(0.85))),
+                ),
+            ]),
+          ),
+        ]);
+      }),
     );
   }
 
-  Widget _progRow(int r, int now, double Function(int) x, double gridW) {
+  Widget _rowWidget(int r, int now, double Function(int) x) {
+    final c = widget.channels[r];
+    final isSelRow = r == _row;
+    final playing = c.id == widget.playingId;
+    return SizedBox(
+      height: rowH,
+      child: Row(children: [
+        SizedBox(
+          width: chW,
+          child: Row(children: [
+            SizedBox(
+              width: 44,
+              child: Text('${r + 1}',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: isSelRow ? kAccent : Colors.white70,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(width: 8),
+            ChannelLogo(c, size: 36),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(c.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: isSelRow ? kAccent : Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600)),
+            ),
+            if (playing)
+              const Padding(
+                padding: EdgeInsets.only(left: 6, right: 10),
+                child: Icon(Icons.play_arrow_rounded, color: kAccent, size: 24),
+              )
+            else
+              const SizedBox(width: 10),
+          ]),
+        ),
+        Expanded(child: _progRow(r, now, x)),
+      ]),
+    );
+  }
+
+  Widget _progRow(int r, int now, double Function(int) x) {
     final ps = _progs(r);
     final children = <Widget>[];
     for (var i = 0; i < ps.length; i++) {
@@ -294,51 +400,45 @@ class TvGuideState extends State<TvGuide> {
       if (w < 3) continue;
       final selected = r == _row && i == _prog;
       final live = p.isLiveAt(now);
-      final past = p.stop <= now;
       children.add(Positioned(
         left: l + 2,
         top: 3,
         bottom: 3,
         width: w,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           alignment: Alignment.centerLeft,
           decoration: BoxDecoration(
             color: selected
                 ? kAccent
                 : live
-                    ? const Color(0xFF2E2E36)
-                    : past
-                        ? const Color(0xFF18181C)
-                        : const Color(0xFF232329),
-            borderRadius: BorderRadius.circular(6),
+                    ? const Color(0xFF30333D)
+                    : const Color(0xFF24262E),
+            borderRadius: BorderRadius.circular(4),
           ),
           child: Text(p.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                  color: selected
-                      ? kOnAccent
-                      : past
-                          ? Colors.white38
-                          : Colors.white,
-                  fontSize: 14,
-                  fontWeight: selected || live ? FontWeight.w600 : FontWeight.w500)),
+                  color: selected ? kOnAccent : Colors.white,
+                  fontSize: 16,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
         ),
       ));
     }
     if (children.isEmpty) {
+      final selected = r == _row;
       children.add(Positioned.fill(
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           alignment: Alignment.centerLeft,
           decoration: BoxDecoration(
-            color: r == _row ? kAccent : const Color(0xFF18181C),
-            borderRadius: BorderRadius.circular(6),
+            color: selected ? kAccent : const Color(0xFF24262E),
+            borderRadius: BorderRadius.circular(4),
           ),
-          child: Text('No information',
-              style: TextStyle(color: r == _row ? kOnAccent : Colors.white54, fontSize: 14)),
+          child: Text('No TV guide for this channel',
+              style: TextStyle(color: selected ? kOnAccent : Colors.white60, fontSize: 16)),
         ),
       ));
     }
