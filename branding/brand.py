@@ -2,15 +2,24 @@ import random
 G='#00FF41'; K='#0B0C0B'; D='#00170A'
 
 def rain_icon(x=0, y=0, s=100, bg=True, rx=22):
-    """Code-rain TV icon in a 100x100 box, placed at x,y scaled to s."""
+    """TV screen with Matrix code rain and the antenna chevron turned 90 degrees
+    into a play arrow. A dark halo knocks the rain out behind the arrow."""
     k = s / 100
+    rain = [
+        (28, 30, 16, .5),  (28, 52, 18, .85),
+        (36, 30, 26, .85), (36, 62, 8, .45),
+        (44, 30, 8, .45),  (44, 44, 26, .7),
+        (52, 30, 20, .7),  (52, 56, 14, .45),
+        (60, 30, 10, .85), (60, 46, 24, .55),
+        (68, 30, 28, .6),  (68, 64, 6, .85),
+        (74, 34, 14, .4),  (74, 54, 14, .7),
+    ]
+    cols = ''.join(f'<path d="M{cx} {y0}v{ln}" opacity="{o}"/>' for cx, y0, ln, o in rain)
     inner = (f'<rect width="100" height="100" rx="{rx}" fill="{K}"/>' if bg else '') + f'''
-<rect x="18" y="30" width="64" height="48" rx="8" fill="none" stroke="{G}" stroke-width="5"/>
-<g stroke="{G}" stroke-width="5" stroke-linecap="round">
-<path d="M31 38v22"/><path d="M41 38v8" opacity=".5"/><path d="M41 54v14"/>
-<path d="M50 38v30" opacity=".75"/><path d="M59 38v12"/><path d="M59 58v10" opacity=".5"/>
-<path d="M69 38v18" opacity=".75"/></g>
-<path d="M38 16l12 12 12-12" fill="none" stroke="{G}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>'''
+<rect x="18" y="22" width="64" height="56" rx="9" fill="none" stroke="{G}" stroke-width="5"/>
+<g stroke="{G}" stroke-width="4" stroke-linecap="round">{cols}</g>
+<path d="M41 35l17 15-17 15" fill="none" stroke="{K}" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M41 35l17 15-17 15" fill="none" stroke="{G}" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>'''
     return f'<g transform="translate({x} {y}) scale({k})">{inner}</g>'
 
 def rain_bg(w, h, seed=7, cols=34, op=0.16):
@@ -33,7 +42,6 @@ def banner_a(w=320, h=180):
     # icon + wordmark, faint rain behind
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 320 180">
 <rect width="320" height="180" fill="{K}"/>{rain_bg(320,180,op=0.13)}
-<rect x="22" y="44" width="92" height="92" rx="20" fill="{K}"/>
 {rain_icon(22, 44, 92)}
 <text x="128" y="106" {FONT} font-size="44" fill="#FFFFFF" letter-spacing="-1">Live<tspan fill="{G}" dx="3">TV</tspan></text>
 </svg>'''
