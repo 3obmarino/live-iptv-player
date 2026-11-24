@@ -261,18 +261,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   onSelectionChanged: (v) => setState(() => _type = v.first),
                 ),
                 const SizedBox(height: 24),
-                TextField(controller: _name, decoration: dec('Name', 'e.g. Home')),
+                TextField(
+                    controller: _name,
+                    textInputAction: TextInputAction.next,
+                    decoration: dec('Name', 'e.g. Home')),
                 const SizedBox(height: 14),
                 if (xt) ...[
                   TextField(
                       controller: _server,
+                      keyboardType: TextInputType.url,
+                      textInputAction: TextInputAction.next,
                       decoration: dec('Server URL', 'http://example.com:8080')),
                   const SizedBox(height: 14),
-                  TextField(controller: _user, decoration: dec('Username')),
+                  TextField(
+                      controller: _user,
+                      textInputAction: TextInputAction.next,
+                      decoration: dec('Username')),
                   const SizedBox(height: 14),
                   TextField(
                     controller: _pass,
                     obscureText: _hidePass,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _busy ? null : _save(),
                     decoration: dec('Password').copyWith(
                       suffixIcon: IconButton(
                         icon: Icon(_hidePass ? Icons.visibility_outlined : Icons.visibility_off_outlined),
@@ -281,7 +291,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                 ] else
-                  TextField(controller: _m3u, decoration: dec('M3U / M3U8 URL')),
+                  TextField(
+                      controller: _m3u,
+                      keyboardType: TextInputType.url,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _busy ? null : _save(),
+                      decoration: dec('M3U / M3U8 URL')),
                 if (_err != null) ...[
                   const SizedBox(height: 16),
                   Text(_err!, style: TextStyle(color: cs.error)),

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -40,6 +41,19 @@ class TvApp extends StatelessWidget {
         darkTheme: buildTheme(Brightness.dark),
         themeMode: kTvBuild ? ThemeMode.dark : AppState.I.themeMode,
         scrollBehavior: const AppScrollBehavior(),
+        // Remote control: ▲/▼ must move between fields even when a text field
+        // has focus (by default a text field keeps those keys for itself).
+        builder: kTvBuild
+            ? (context, child) => Shortcuts(
+                  shortcuts: const <ShortcutActivator, Intent>{
+                    SingleActivator(LogicalKeyboardKey.arrowUp):
+                        DirectionalFocusIntent(TraversalDirection.up, ignoreTextFields: false),
+                    SingleActivator(LogicalKeyboardKey.arrowDown):
+                        DirectionalFocusIntent(TraversalDirection.down, ignoreTextFields: false),
+                  },
+                  child: child ?? const SizedBox.shrink(),
+                )
+            : null,
         home: const RootGate(),
       ),
     );
