@@ -204,8 +204,19 @@ class AppState extends ChangeNotifier {
   // ----------------------------------------------------------------- loading
 
   /// Returns an error message, or null on success.
-  Future<String?> refreshChannels(Profile p, {bool silent = false}) async {
-    if (kDemo) return null;
+  /// With [addIfValid], [p] is only added/updated in the profile list once
+  /// its channel list loaded, so a wrong server or login is never saved.
+  Future<String?> refreshChannels(Profile p,
+      {bool silent = false, bool addIfValid = false}) async {
+    if (kDemo) {
+      if (addIfValid) await addOrUpdateProfile(p);
+      return null;
+    }
+    if (addIfValid) {
+      while (loadingChannels) {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      }
+    }
     if (loadingChannels) return null;
     loadingChannels = true;
     _lastChannelAttempt = DateTime.now();
@@ -217,6 +228,7 @@ class AppState extends ChangeNotifier {
           : await loadM3u(p, settings.userAgent);
       if (r.expDate != null) p.expDate = r.expDate;
       if (!p.isXtream) p.playlistEpgUrl = r.epgUrl;
+      if (addIfValid) await addOrUpdateProfile(p);
       p.channelsUpdated = DateTime.now();
       await Store.writeJson('channels_${p.id}.json', {
         'categories': [for (final c in r.categories) c.toJson()],
@@ -233,7 +245,7 @@ class AppState extends ChangeNotifier {
       return null;
     } catch (e) {
       final msg = describeError(e);
-      if (p.id == activeId) channelsError = msg;
+      if (!addIfValid && p.id == activeId) channelsError = msg;
       return msg;
     } finally {
       loadingChannels = false;

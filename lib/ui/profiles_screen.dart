@@ -222,13 +222,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     p.name = _name.text.trim().isEmpty ? p.host : _name.text.trim();
 
     final s = AppState.I;
-    await s.addOrUpdateProfile(p);
-    final err = await s.refreshChannels(p);
+    // Only saved when the channel list actually loads.
+    final err = await s.refreshChannels(p, addIfValid: true);
     if (!mounted) return;
     if (err != null) {
       setState(() {
         _busy = false;
-        _err = 'Saved, but the channel list could not be loaded:\n$err';
+        _err = 'Could not load the channel list, so the profile was not '
+            '${e == null ? 'added' : 'changed'}. Check the details and try again.\n$err';
       });
       return;
     }
