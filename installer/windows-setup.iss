@@ -43,3 +43,34 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; Tasks: deskto
 
 [Run]
 Filename: "{app}\{#MyAppExe}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall
+
+[UninstallRun]
+; Close the app first: a running app keeps its .exe and DLLs locked, and
+; they were left behind in Program Files.
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM {#MyAppExe}"; Flags: runhidden; RunOnceId: "CloseLiveTV"
+
+[UninstallDelete]
+; Anything the app created next to itself, and downloaded update installers
+Type: filesandordirs; Name: "{app}"
+Type: files; Name: "{%TEMP}\LiveTV-update-*"
+
+[CustomMessages]
+english.RemoveData=Also remove your profiles, favourites, TV guide and channel logos from this PC?%n%nChoose No to keep them for a later reinstall.
+danish.RemoveData=Skal dine profiler, favoritter, tv-guide og kanallogoer også fjernes fra denne pc?%n%nVælg Nej for at beholde dem til en senere geninstallation.
+
+[Code]
+// Clean uninstall: the app keeps its data (profiles with the encrypted
+// login, channel list, TV guide, logo cache) in %APPDATA%\dk.livetvplayer.
+// Ask before deleting it; a silent uninstall keeps it.
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  DataDir: String;
+begin
+  if CurUninstallStep = usPostUninstall then
+  begin
+    DataDir := ExpandConstant('{userappdata}\dk.livetvplayer');
+    if DirExists(DataDir) and (not UninstallSilent) then
+      if MsgBox(CustomMessage('RemoveData'), mbConfirmation, MB_YESNO) = IDYES then
+        DelTree(DataDir, True, True, True);
+  end;
+end;

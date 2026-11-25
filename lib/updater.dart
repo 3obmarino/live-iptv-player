@@ -47,10 +47,29 @@ class Updater extends ChangeNotifier {
   Timer? _timer;
 
   void start() {
+    _cleanOldDownloads();
     if (appBuild == 0) return;
     Timer(const Duration(seconds: 5), check);
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(hours: 12), (_) => check());
+  }
+
+  /// Remove update installers left in %TEMP% by earlier updates (an .exe
+  /// still running right after an update is locked and simply skipped).
+  void _cleanOldDownloads() {
+    if (!Platform.isWindows) return;
+    Timer(const Duration(seconds: 30), () {
+      try {
+        for (final f in Directory.systemTemp.listSync()) {
+          final name = f.uri.pathSegments.isEmpty ? '' : f.uri.pathSegments.last;
+          if (f is File && name.startsWith('LiveTV-update-')) {
+            try {
+              f.deleteSync();
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
+    });
   }
 
   /// Returns the newer release, or null if up to date / offline.
