@@ -26,6 +26,9 @@ Future<void> main() async {
     // Remote control = always draw focus highlights (Flutter otherwise
     // waits until it has decided the device is keyboard-driven).
     FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+    // Full screen: hides the status and navigation bars that Android TV
+    // boxes and signage screens sometimes show over the picture.
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
   await AppState.I.init();
   Updater.I.start();

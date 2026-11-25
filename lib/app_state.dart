@@ -68,6 +68,7 @@ class AppState extends ChangeNotifier {
       channels = demoChannels();
       _epgRaw = demoEpg(channels);
       _applyShift();
+      LogoCache.prefetch(channels.map((c) => c.logo));
       notifyListeners();
       return;
     }
