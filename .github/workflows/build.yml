@@ -13,6 +13,12 @@ jobs:
   windows:
     runs-on: windows-2022
     steps:
+      # Build number = run number + 100: the workflow was renamed (build-windows.yml
+      # -> build.yml), which restarted GitHub's counter, and versions must keep
+      # going up (1.0.37 was the last build of the old workflow).
+      - name: Build number
+        shell: bash
+        run: echo "BUILD=$((GITHUB_RUN_NUMBER + 100))" >> "$GITHUB_ENV"
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
@@ -40,7 +46,7 @@ jobs:
         run: flutter test test/parsing_test.dart  # flutter create adds a sample widget_test.dart
 
       - name: Build
-        run: flutter build windows --release --build-name=1.0.${{ github.run_number }} --build-number=${{ github.run_number }} --dart-define=APP_BUILD=${{ github.run_number }}
+        run: flutter build windows --release --build-name=1.0.${{ env.BUILD }} --build-number=${{ env.BUILD }} --dart-define=APP_BUILD=${{ env.BUILD }}
 
       - name: Bundle VC++ runtime (so it runs on a clean PC)
         shell: pwsh
@@ -56,7 +62,7 @@ jobs:
       - name: Build installer
         shell: pwsh
         run: |
-          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DMyAppVersion=1.0.${{ github.run_number }}" installer\windows-setup.iss
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DMyAppVersion=1.0.${{ env.BUILD }}" installer\windows-setup.iss
 
       - name: Portable zip
         shell: pwsh
@@ -70,6 +76,12 @@ jobs:
   android:
     runs-on: ubuntu-latest
     steps:
+      # Build number = run number + 100: the workflow was renamed (build-windows.yml
+      # -> build.yml), which restarted GitHub's counter, and versions must keep
+      # going up (1.0.37 was the last build of the old workflow).
+      - name: Build number
+        shell: bash
+        run: echo "BUILD=$((GITHUB_RUN_NUMBER + 100))" >> "$GITHUB_ENV"
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
@@ -115,7 +127,7 @@ jobs:
       - run: flutter pub get
 
       - name: Build APK (arm64 – Pixel 7 and other modern phones)
-        run: flutter build apk --release --target-platform android-arm64 --build-name=1.0.${{ github.run_number }} --build-number=${{ github.run_number }} --dart-define=APP_BUILD=${{ github.run_number }}
+        run: flutter build apk --release --target-platform android-arm64 --build-name=1.0.${{ env.BUILD }} --build-number=${{ env.BUILD }} --dart-define=APP_BUILD=${{ env.BUILD }}
 
       - name: Rename
         run: |
@@ -130,6 +142,12 @@ jobs:
   android-tv:
     runs-on: ubuntu-latest
     steps:
+      # Build number = run number + 100: the workflow was renamed (build-windows.yml
+      # -> build.yml), which restarted GitHub's counter, and versions must keep
+      # going up (1.0.37 was the last build of the old workflow).
+      - name: Build number
+        shell: bash
+        run: echo "BUILD=$((GITHUB_RUN_NUMBER + 100))" >> "$GITHUB_ENV"
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
@@ -171,7 +189,7 @@ jobs:
 
       # 32- and 64-bit ARM: Chromecast with Google TV runs a 32-bit userspace.
       - name: Build TV APK
-        run: flutter build apk --release --target-platform android-arm,android-arm64 --build-name=1.0.${{ github.run_number }} --build-number=${{ github.run_number }} --dart-define=APP_BUILD=${{ github.run_number }} --dart-define=TV=true
+        run: flutter build apk --release --target-platform android-arm,android-arm64 --build-name=1.0.${{ env.BUILD }} --build-number=${{ env.BUILD }} --dart-define=APP_BUILD=${{ env.BUILD }} --dart-define=TV=true
 
       # Fixed file name => stable URL for the Downloader app:
       # https://github.com/3obmarino/live-iptv-player/releases/latest/download/LiveTV-Player-TV.apk
@@ -195,6 +213,12 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Build number = run number + 100: the workflow was renamed (build-windows.yml
+      # -> build.yml), which restarted GitHub's counter, and versions must keep
+      # going up (1.0.37 was the last build of the old workflow).
+      - name: Build number
+        shell: bash
+        run: echo "BUILD=$((GITHUB_RUN_NUMBER + 100))" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: dist
@@ -205,8 +229,8 @@ jobs:
 
       - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: Live TV Player 1.0.${{ github.run_number }}
+          tag_name: v1.0.${{ env.BUILD }}
+          name: Live TV Player 1.0.${{ env.BUILD }}
           target_commitish: ${{ github.sha }}
           make_latest: true
           body: |
