@@ -1,4 +1,4 @@
-; Inno Setup script - builds LiveTV-Windows-Setup.exe
+; Inno Setup script - builds LiveTV-Player-Windows-Setup.exe
 ; Compiled by the GitHub workflow:  ISCC /DMyAppVersion=1.0.x installer\setup.iss
 
 #define MyAppName "Live TV Player"
@@ -15,7 +15,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=..\dist
-OutputBaseFilename=LiveTV-Windows-Setup
+OutputBaseFilename=LiveTV-Player-Windows-Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

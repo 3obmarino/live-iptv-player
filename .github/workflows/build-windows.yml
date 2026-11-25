@@ -60,7 +60,7 @@ jobs:
 
       - name: Portable zip
         shell: pwsh
-        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath dist\LiveTV-Windows-Portable.zip
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath dist\LiveTV-Player-Windows-Portable.zip
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -120,7 +120,7 @@ jobs:
       - name: Rename
         run: |
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk dist/LiveTV-Phone.apk
+          cp build/app/outputs/flutter-apk/app-release.apk dist/LiveTV-Player-Phone.apk
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -174,11 +174,13 @@ jobs:
         run: flutter build apk --release --target-platform android-arm,android-arm64 --build-name=1.0.${{ github.run_number }} --build-number=${{ github.run_number }} --dart-define=APP_BUILD=${{ github.run_number }} --dart-define=TV=true
 
       # Fixed file name => stable URL for the Downloader app:
-      # https://github.com/3obmarino/live-iptv-player/releases/latest/download/LiveTV-TV.apk
+      # https://github.com/3obmarino/live-iptv-player/releases/latest/download/LiveTV-Player-TV.apk
       - name: Rename
         run: |
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk dist/LiveTV-TV.apk
+          cp build/app/outputs/flutter-apk/app-release.apk dist/LiveTV-Player-TV.apk
+          # Old name kept until the Downloader code points at the new one
+          cp dist/LiveTV-Player-TV.apk dist/LiveTV-TV.apk
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -210,10 +212,11 @@ jobs:
           body: |
             | File | For |
             |---|---|
-            | **LiveTV-Windows-Setup.exe** | Windows 10/11 – installer (or use *Install* in the app) |
-            | **LiveTV-Windows-Portable.zip** | Windows – no install, unzip and run |
-            | **LiveTV-Phone.apk** | Android phones (64-bit) |
-            | **LiveTV-TV.apk** | Google TV, Android TV, TV boxes and Android signage screens – or enter code **8371457** in the Downloader app |
+            | **LiveTV-Player-Windows-Setup.exe** | Windows 10/11 – installer (or use *Install* in the app) |
+            | **LiveTV-Player-Windows-Portable.zip** | Windows – no install, unzip and run |
+            | **LiveTV-Player-Phone.apk** | Android phones (64-bit) |
+            | **LiveTV-Player-TV.apk** | Google TV, Android TV, TV boxes and Android signage screens – or enter code **8371457** in the Downloader app |
+            | LiveTV-TV.apk | Same file as LiveTV-Player-TV.apk (old name, used by the Downloader code) |
 
             Changes: ${{ github.event.head_commit.message }}
           files: dist/*

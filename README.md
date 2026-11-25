@@ -9,8 +9,8 @@ Flutter UI, libmpv playback (via media_kit), Xtream Codes and M3U playlists.
 | Device | How |
 |---|---|
 | **Google TV / Android TV** | In the **Downloader** app enter code **`8371457`** |
-| Windows | `LiveTV-Windows-Setup.exe` (or `LiveTV-Windows-Portable.zip`) from [latest release](https://github.com/3obmarino/live-iptv-player/releases/latest) |
-| Android phone | `LiveTV-Phone.apk` from [latest release](https://github.com/3obmarino/live-iptv-player/releases/latest) |
+| Windows | `LiveTV-Player-Windows-Setup.exe` (or `LiveTV-Player-Windows-Portable.zip`) from [latest release](https://github.com/3obmarino/live-iptv-player/releases/latest) |
+| Android phone | `LiveTV-Player-Phone.apk` from [latest release](https://github.com/3obmarino/live-iptv-player/releases/latest) |
 
 The Downloader code always points to the newest TV version:
 `https://github.com/3obmarino/live-iptv-player/releases/latest/download/LiveTV-TV.apk`.
@@ -37,7 +37,7 @@ M mute · L channel list · I info · Esc back.
 2. GitHub → *Actions* → "Build Windows installer" runs automatically
    (or press *Run workflow*). Takes ~10 minutes.
 3. Open the finished run → *Artifacts* → download `LiveTVPlayer-Windows`.
-   It contains `LiveTV-Windows-Setup.exe` and `LiveTV-Windows-Portable.zip`.
+   It contains `LiveTV-Player-Windows-Setup.exe` and `LiveTV-Player-Windows-Portable.zip`.
 
 Pushing a tag like `v1.0.0` also attaches the files to a GitHub Release.
 
