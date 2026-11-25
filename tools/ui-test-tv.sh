@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Drives the Google TV app with remote-control key presses on an emulator and
-# saves a screenshot after every step (run by .github/workflows/tv-ui-test.yml).
+# saves a screenshot after every step (run by .github/workflows/ui-test-tv.yml).
 set -u
 PKG=dk.livetvplayer.live_tv_player
 OUT=shots

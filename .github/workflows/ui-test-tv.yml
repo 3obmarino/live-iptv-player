@@ -1,4 +1,4 @@
-name: TV UI test (emulator)
+name: UI test (TV emulator)
 
 # Builds the Google TV app in demo mode, drives it with remote-control key
 # presses on an Android emulator at 1080p and publishes the screenshots to
@@ -6,7 +6,7 @@ name: TV UI test (emulator)
 on:
   push:
     branches: [main]
-    paths: ['lib/**', 'tools/**', '.github/workflows/tv-ui-test.yml']
+    paths: ['lib/**', 'tools/**', '.github/workflows/ui-test-tv.yml']
   workflow_dispatch:
 
 permissions:
@@ -45,7 +45,7 @@ jobs:
           sed -i 's|android:label="live_tv_player"|android:label="Live TV"|' $M
           rm -rf android/app/src/main/res/mipmap-anydpi-v26
           cp -r branding/android/mipmap-* branding/android/drawable-* android/app/src/main/res/
-          bash tools/android_extras.sh
+          bash tools/android-native.sh
 
       - run: flutter pub get
 
@@ -70,7 +70,7 @@ jobs:
           ram-size: 4096M
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
-          script: bash tools/tv_ui_test.sh
+          script: bash tools/ui-test-tv.sh
 
       - name: Publish screenshots to the ui-test-shots branch
         if: always()

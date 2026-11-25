@@ -1,4 +1,4 @@
-name: Build Windows + Android
+name: Build and release
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
           if (-not (Test-Path windows)) {
             flutter create --platforms=windows --project-name live_tv_player --org dk.livetvplayer .
           }
-          Copy-Item branding\app_icon.ico windows\runner\resources\app_icon.ico -Force
+          Copy-Item branding\icon.ico windows\runner\resources\icon.ico -Force
 
       - run: flutter pub get
 
@@ -56,7 +56,7 @@ jobs:
       - name: Build installer
         shell: pwsh
         run: |
-          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DMyAppVersion=1.0.${{ github.run_number }}" installer\setup.iss
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DMyAppVersion=1.0.${{ github.run_number }}" installer\windows-setup.iss
 
       - name: Portable zip
         shell: pwsh
@@ -97,7 +97,7 @@ jobs:
           sed -i 's|android:label="live_tv_player"|android:label="Live TV"|' $M
           rm -rf android/app/src/main/res/mipmap-anydpi-v26
           cp -r branding/android/mipmap-* android/app/src/main/res/
-          bash tools/android_extras.sh
+          bash tools/android-native.sh
           cat $M
 
       # Fixed signing key so new APKs install as updates over old ones.
@@ -153,7 +153,7 @@ jobs:
           sed -i 's|android:label="live_tv_player"|android:label="Live TV"|' $M
           rm -rf android/app/src/main/res/mipmap-anydpi-v26
           cp -r branding/android/mipmap-* branding/android/drawable-* android/app/src/main/res/
-          bash tools/android_extras.sh
+          bash tools/android-native.sh
           cat $M
 
       - name: Signing key (from the ANDROID_KEYSTORE_B64 secret)

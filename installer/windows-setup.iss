@@ -1,5 +1,5 @@
 ; Inno Setup script - builds LiveTV-Player-Windows-Setup.exe
-; Compiled by the GitHub workflow:  ISCC /DMyAppVersion=1.0.x installer\setup.iss
+; Compiled by the GitHub workflow:  ISCC /DMyAppVersion=1.0.x installer\windows-setup.iss
 
 #define MyAppName "Live TV Player"
 #define MyAppExe "live_tv_player.exe"
@@ -23,7 +23,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequiredOverridesAllowed=dialog
 UninstallDisplayIcon={app}\{#MyAppExe}
-SetupIconFile=..\branding\app_icon.ico
+SetupIconFile=..\branding\icon.ico
 CloseApplications=force
 RestartApplications=no
 
