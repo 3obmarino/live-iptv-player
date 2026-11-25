@@ -54,13 +54,15 @@ class Updater extends ChangeNotifier {
     _timer = Timer.periodic(const Duration(hours: 12), (_) => check());
   }
 
-  /// Remove update installers left in %TEMP% by earlier updates (an .exe
-  /// still running right after an update is locked and simply skipped).
+  /// Remove update installers left behind by earlier updates: %TEMP% on
+  /// Windows, the app's cache on Android (a 50 MB APK per update adds up on
+  /// TV boxes with little storage). A file still in use is simply skipped.
   void _cleanOldDownloads() {
-    if (!Platform.isWindows) return;
-    Timer(const Duration(seconds: 30), () {
+    if (!Platform.isWindows && !Platform.isAndroid) return;
+    Timer(const Duration(seconds: 30), () async {
       try {
-        for (final f in Directory.systemTemp.listSync()) {
+        final dir = Platform.isWindows ? Directory.systemTemp : await getTemporaryDirectory();
+        for (final f in dir.listSync()) {
           final name = f.uri.pathSegments.isEmpty ? '' : f.uri.pathSegments.last;
           if (f is File && name.startsWith('LiveTV-update-')) {
             try {
