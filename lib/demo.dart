@@ -24,6 +24,9 @@ const _cats = <String, List<String>>{
       'Machines [Multi-Sub]'],
 };
 
+const _logoBase =
+    'https://raw.githubusercontent.com/3obmarino/live-iptv-player/main/branding/demo-logos';
+
 const _titles = [
   'Morning Show', 'The Daily Match', 'Kitchen Heroes', 'Coastal Patrol', 'Deadline',
   'Hidden Treasures', 'Road Trip Nordic', 'Weekend Football Studio', 'Superliga Live',
@@ -46,6 +49,8 @@ List<Channel> demoChannels() {
         categoryId: cat,
         number: i + 1,
         url: _streams[i % _streams.length],
+        // invented logos (branding/demo_logos.py), served from this repo
+        logo: '$_logoBase/demo$i.png',
       ));
       i++;
     }
