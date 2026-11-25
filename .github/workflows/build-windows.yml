@@ -60,7 +60,7 @@ jobs:
 
       - name: Portable zip
         shell: pwsh
-        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath dist\LiveTVPlayer-portable-1.0.${{ github.run_number }}.zip
+        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath dist\LiveTV-Windows-Portable.zip
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -120,7 +120,7 @@ jobs:
       - name: Rename
         run: |
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk dist/LiveTV-1.0.${{ github.run_number }}-arm64.apk
+          cp build/app/outputs/flutter-apk/app-release.apk dist/LiveTV-Phone.apk
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -208,9 +208,12 @@ jobs:
           target_commitish: ${{ github.sha }}
           make_latest: true
           body: |
-            Windows: download LiveTVPlayer-Setup-1.0.${{ github.run_number }}.exe (or use "Install" in the app).
-            Android phone: download LiveTV-1.0.${{ github.run_number }}-arm64.apk on the phone.
-            Google TV: in the Downloader app enter code 8371457
+            | File | For |
+            |---|---|
+            | **LiveTV-Windows-Setup.exe** | Windows 10/11 – installer (or use *Install* in the app) |
+            | **LiveTV-Windows-Portable.zip** | Windows – no install, unzip and run |
+            | **LiveTV-Phone.apk** | Android phones (64-bit) |
+            | **LiveTV-TV.apk** | Google TV, Android TV, TV boxes and Android signage screens – or enter code **8371457** in the Downloader app |
 
             Changes: ${{ github.event.head_commit.message }}
           files: dist/*
