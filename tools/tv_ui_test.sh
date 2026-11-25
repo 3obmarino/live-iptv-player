@@ -78,4 +78,26 @@ for f in $(adb shell ls /data/anr 2>/dev/null | tr -d '\r'); do
   adb shell cat "/data/anr/$f" > "$OUT/anr_$f.txt" 2>/dev/null || true
 done
 grep -E "flutter|AndroidRuntime|FATAL|mpv|media_kit" "$OUT/logcat_full.txt" | tail -400 > "$OUT/logcat_app.txt" || true
+
+# F: "Start on boot" – switch it on the way the app does (flag file +
+# "display over other apps"), reboot, and check Live TV is in front.
+UIDN=$(adb shell stat -c %u "/data/data/$PKG" | tr -d '\r')
+adb shell "mkdir -p /data/data/$PKG/files && touch /data/data/$PKG/files/autostart_on_boot && chown $UIDN:$UIDN /data/data/$PKG/files/autostart_on_boot"
+adb shell appops set "$PKG" SYSTEM_ALERT_WINDOW allow
+adb shell am force-stop "$PKG"
+adb reboot
+sleep 20
+adb wait-for-device
+until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do sleep 3; done
+sleep 60
+adb shell wm size 1920x1080; adb shell wm density 320
+sleep 5
+shot F1_after_reboot
+if adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" | grep -q "$PKG"; then
+  echo "BOOT_AUTOSTART=ok" | tee "$OUT/boot_autostart.txt"
+else
+  echo "BOOT_AUTOSTART=failed" | tee "$OUT/boot_autostart.txt"
+  adb shell dumpsys activity activities | grep -E "ResumedActivity" >> "$OUT/boot_autostart.txt" || true
+  adb logcat -d | grep -iE "BootReceiver|background activity|BAL|live_tv" | tail -50 >> "$OUT/boot_autostart.txt" || true
+fi
 echo "done: $n screenshots"

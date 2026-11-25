@@ -45,6 +45,7 @@ jobs:
           sed -i 's|android:label="live_tv_player"|android:label="Live TV"|' $M
           rm -rf android/app/src/main/res/mipmap-anydpi-v26
           cp -r branding/android/mipmap-* branding/android/drawable-* android/app/src/main/res/
+          bash tools/android_extras.sh
 
       - run: flutter pub get
 

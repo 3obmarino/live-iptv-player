@@ -97,6 +97,7 @@ jobs:
           sed -i 's|android:label="live_tv_player"|android:label="Live TV"|' $M
           rm -rf android/app/src/main/res/mipmap-anydpi-v26
           cp -r branding/android/mipmap-* android/app/src/main/res/
+          bash tools/android_extras.sh
           cat $M
 
       # Fixed signing key so new APKs install as updates over old ones.
@@ -152,6 +153,7 @@ jobs:
           sed -i 's|android:label="live_tv_player"|android:label="Live TV"|' $M
           rm -rf android/app/src/main/res/mipmap-anydpi-v26
           cp -r branding/android/mipmap-* branding/android/drawable-* android/app/src/main/res/
+          bash tools/android_extras.sh
           cat $M
 
       - name: Signing key (from the ANDROID_KEYSTORE_B64 secret)

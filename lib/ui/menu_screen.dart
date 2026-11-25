@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
+import '../autostart.dart';
 import '../models.dart';
 import 'channel_check_screen.dart';
 import 'common.dart';
@@ -17,7 +18,7 @@ class MenuScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: AppState.I,
+      listenable: Listenable.merge([AppState.I, Autostart.I]),
       builder: (context, _) {
         final s = AppState.I;
         final p = s.active;
@@ -103,6 +104,28 @@ class MenuScreen extends StatelessWidget {
                   builder: (_) => const EpgSettingsScreen()))),
           item(Icons.dark_mode_outlined, 'Theme', _themeLabel(s.settings.themeMode),
               () => _pickTheme(context)),
+          if (Autostart.supported)
+            item(
+                Icons.power_settings_new_rounded,
+                'Start on boot',
+                !Autostart.I.enabled
+                    ? 'Off – open Live TV when the device starts'
+                    : Autostart.I.permitted
+                        ? 'On'
+                        : 'On – allow "Display over other apps" for Live TV to finish',
+                () async {
+              final turnOn = !Autostart.I.enabled;
+              final ok = await Autostart.I.setEnabled(turnOn);
+              if (!context.mounted) return;
+              if (!ok) {
+                toast(context,
+                    'Open Android Settings > Apps > Live TV and allow "Display over other apps"');
+              } else if (!turnOn) {
+                toast(context, 'Start on boot is off');
+              } else if (Autostart.I.permitted) {
+                toast(context, 'Live TV will open when the device starts');
+              }
+            }),
           if (!Platform.isAndroid)
             item(Icons.fact_check_outlined, 'Check channels',
                 'Find channels that don\'t work',
