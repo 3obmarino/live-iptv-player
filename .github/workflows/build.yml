@@ -37,7 +37,7 @@ jobs:
         continue-on-error: true
 
       - name: Unit tests
-        run: flutter test
+        run: flutter test test/parsing_test.dart  # flutter create adds a sample widget_test.dart
 
       - name: Build
         run: flutter build windows --release --build-name=1.0.${{ github.run_number }} --build-number=${{ github.run_number }} --dart-define=APP_BUILD=${{ github.run_number }}
