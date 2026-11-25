@@ -34,7 +34,7 @@ M mute · L channel list · I info · Esc back.
 ## Getting the installer (no tools needed on your PC)
 1. Create a **private** GitHub repository and upload this folder's contents
    (including the hidden `.github` folder).
-2. GitHub → *Actions* → "Build Windows installer" runs automatically
+2. GitHub → *Actions* → "Build and release" runs automatically
    (or press *Run workflow*). Takes ~10 minutes.
 3. Open the finished run → *Artifacts* → download `LiveTVPlayer-Windows`.
    It contains `LiveTV-Player-Windows-Setup.exe` and `LiveTV-Player-Windows-Portable.zip`.
