@@ -22,6 +22,8 @@ adb shell wm density 320
 adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb shell settings put global animator_duration_scale 0
+# no "Viewing full screen" tip over the screenshots
+adb shell settings put secure immersive_mode_confirmations confirmed
 
 adb install -r -g app.apk
 adb logcat -c
