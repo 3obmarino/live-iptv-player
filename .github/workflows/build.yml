@@ -34,7 +34,7 @@ jobs:
           if (-not (Test-Path windows)) {
             flutter create --platforms=windows --project-name live_tv_player --org dk.livetvplayer .
           }
-          Copy-Item branding\icon.ico windows\runner\resources\icon.ico -Force
+          Copy-Item branding\icon.ico windows\runner\resources\app_icon.ico -Force
 
       - run: flutter pub get
 
