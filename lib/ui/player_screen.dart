@@ -27,8 +27,10 @@ class PlayerScreen extends StatefulWidget {
 }
 
 class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver {
-  late final Player _player;
-  late final VideoController _controller;
+  late Player _player;
+  late VideoController _controller;
+  int _playerGen = 0; // new Video widget when the player is renewed
+  bool _renewed = false;
   late int _index;
   final List<StreamSubscription<dynamic>> _subs = [];
   final _focus = FocusNode();
@@ -62,6 +64,24 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _index = (widget.index < 0 || widget.index >= widget.playlist.length) ? 0 : widget.index;
     _volume = AppState.I.settings.volume;
     WidgetsBinding.instance.addObserver(this);
+    _createPlayer();
+    if (!_desktop) {
+      SystemChrome.setPreferredOrientations(
+          [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
+    // Keeps the programme progress bar moving.
+    _clock = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (mounted && _controls) setState(() {});
+    });
+    _configure().then((_) {
+      if (!mounted) return;
+      _open();
+      if (_desktop) _watchFirstFrame();
+    });
+  }
+
+  void _createPlayer() {
     _player = Player();
     _controller = VideoController(_player, configuration: videoConfig());
     _subs.add(_player.stream.error.listen(_onError));
@@ -92,21 +112,49 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _subs.add(_player.stream.track.listen((t) {
       if (mounted) setState(() => _audioTrack = t.audio);
     }));
-    if (!_desktop) {
-      SystemChrome.setPreferredOrientations(
-          [DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
+  /// Windows: the very first video after starting the app sometimes stays
+  /// black (sound and the stream run, but no picture reaches the window);
+  /// opening the channel again worked. Do that automatically: if no frame
+  /// has been drawn 6 s after the first channel starts playing video, renew
+  /// the player and video output once.
+  Future<void> _watchFirstFrame() async {
+    final c = _controller;
+    try {
+      // Measure from when the stream actually plays (providers can be slow).
+      if (!_player.state.playing) {
+        await _player.stream.playing.firstWhere((p) => p).timeout(const Duration(seconds: 40));
+      }
+      if (!mounted || c != _controller) return;
+      await c.waitUntilFirstFrameRendered.timeout(const Duration(seconds: 6));
+    } on TimeoutException {
+      if (!mounted || _renewed || c != _controller) return;
+      final st = _player.state;
+      final hasVideo = st.tracks.video.any((t) => t.id != 'auto' && t.id != 'no');
+      if (st.playing && hasVideo) await _renewPlayer();
+    } catch (_) {}
+  }
+
+  Future<void> _renewPlayer() async {
+    _renewed = true;
+    final old = _player;
+    for (final s in _subs) {
+      s.cancel();
     }
-    // Keeps the programme progress bar moving.
-    _clock = Timer.periodic(const Duration(seconds: 20), (_) {
-      if (mounted && _controls) setState(() {});
-    });
-    _configure().then((_) {
-      if (mounted) _open();
-    });
+    _subs.clear();
+    _createPlayer();
+    if (mounted) setState(() => _playerGen++);
+    await _configure();
+    if (mounted) _open();
+    old.dispose();
   }
 
   Future<void> _configure() async {
+    // Wait until the video output exists before the first open.
+    try {
+      await _controller.platform.future.timeout(const Duration(seconds: 5));
+    } catch (_) {}
     await tuneForLive(_player);
     await _player.setVolume(_volume);
   }
@@ -337,7 +385,10 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                           final v = d.primaryVelocity ?? 0;
                           if (v.abs() > 300) _zap(v < 0 ? 1 : -1);
                         },
-                        child: Video(controller: _controller, controls: NoVideoControls),
+                        child: Video(
+                            key: ValueKey(_playerGen),
+                            controller: _controller,
+                            controls: NoVideoControls),
                       ),
                       IgnorePointer(
                         ignoring: !_controls,
