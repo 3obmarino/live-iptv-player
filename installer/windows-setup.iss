@@ -11,6 +11,14 @@
 AppId={{8B0F3C2E-6C1A-4C8E-9D2B-3A7E5F1C9D44}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+AppPublisher=Ukendt Software
+AppPublisherURL=https://github.com/3obmarino/live-iptv-player
+AppSupportURL=https://github.com/3obmarino/live-iptv-player/issues
+AppUpdatesURL=https://github.com/3obmarino/live-iptv-player/releases/latest
+AppCopyright=Copyright (C) 2026 Ukendt Software
+VersionInfoCompany=Ukendt Software
+VersionInfoProductName={#MyAppName}
+VersionInfoVersion={#MyAppVersion}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
@@ -60,17 +68,23 @@ danish.RemoveData=Skal dine profiler, favoritter, tv-guide og kanallogoer også 
 
 [Code]
 // Clean uninstall: the app keeps its data (profiles with the encrypted
-// login, channel list, TV guide, logo cache) in %APPDATA%\dk.livetvplayer.
+// login, channel list, TV guide, logo cache) in %APPDATA%\Ukendt Software\Live TV Player.
 // Ask before deleting it; a silent uninstall keeps it.
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
-  DataDir: String;
+  DataDir, OldDir, CompanyDir: String;
 begin
   if CurUninstallStep = usPostUninstall then
   begin
-    DataDir := ExpandConstant('{userappdata}\dk.livetvplayer');
-    if DirExists(DataDir) and (not UninstallSilent) then
+    CompanyDir := ExpandConstant('{userappdata}\Ukendt Software');
+    DataDir := CompanyDir + '\Live TV Player';
+    OldDir := ExpandConstant('{userappdata}\dk.livetvplayer'); // before 1.0.112
+    if (DirExists(DataDir) or DirExists(OldDir)) and (not UninstallSilent) then
       if MsgBox(CustomMessage('RemoveData'), mbConfirmation, MB_YESNO) = IDYES then
+      begin
         DelTree(DataDir, True, True, True);
+        DelTree(OldDir, True, True, True);
+        RemoveDir(CompanyDir); // only if no other Ukendt Software app uses it
+      end;
   end;
 end;

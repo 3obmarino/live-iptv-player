@@ -35,6 +35,17 @@ jobs:
             flutter create --platforms=windows --project-name live_tv_player --org dk.livetvplayer .
           }
           Copy-Item branding\icon.ico windows\runner\resources\app_icon.ico -Force
+          # Publisher and names shown by Windows (Properties, Task Manager,
+          # Apps list). Note: path_provider builds the data folder from
+          # CompanyName\ProductName -> %APPDATA%\Ukendt Software\Live TV Player
+          $rc = 'windows\runner\Runner.rc'
+          $t = Get-Content $rc -Raw
+          $t = $t -replace '"CompanyName", "[^"]*"', '"CompanyName", "Ukendt Software"'
+          $t = $t -replace '"FileDescription", "[^"]*"', '"FileDescription", "Live TV Player"'
+          $t = $t -replace '"ProductName", "[^"]*"', '"ProductName", "Live TV Player"'
+          $t = $t -replace '"LegalCopyright", "[^"]*"', '"LegalCopyright", "Copyright (C) 2026 Ukendt Software"'
+          Set-Content $rc $t -NoNewline
+          Select-String -Path $rc -Pattern 'CompanyName|ProductName|FileDescription|LegalCopyright'
 
       - run: flutter pub get
 

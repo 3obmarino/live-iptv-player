@@ -17,6 +17,9 @@ const String appVersion = appBuild == 0 ? 'dev' : '1.0.$appBuild';
 const String _repo = '3obmarino/live-iptv-player';
 
 /// Set by the Google TV build (--dart-define=TV=true).
+/// Publisher shown in the apps and on Windows.
+const kCompany = 'Ukendt Software';
+
 const bool kTvBuild = bool.fromEnvironment('TV', defaultValue: false);
 
 class UpdateInfo {

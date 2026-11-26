@@ -147,6 +147,12 @@ class MenuScreen extends StatelessWidget {
           }),
         ];
 
+        final about = Padding(
+          padding: const EdgeInsets.only(top: 20, left: 8),
+          child: Text('Live TV Player $appVersion · © 2026 $kCompany',
+              style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+        );
+
         if (compact) {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -160,6 +166,7 @@ class MenuScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               ...menuItems,
+              about,
             ],
           );
         }
@@ -177,7 +184,7 @@ class MenuScreen extends StatelessWidget {
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(48, 24, 48, 24),
-                children: menuItems,
+                children: [...menuItems, about],
               ),
             ),
           ],
