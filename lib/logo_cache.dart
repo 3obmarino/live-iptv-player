@@ -46,33 +46,47 @@ class LogoCache {
 
   static bool failed(String url) => _failed.contains(url);
 
-  /// Download [url] to disk (at most 6 downloads at a time). Logos on
-  /// screen ([visible]) jump ahead of the background prefetch.
+  /// Download [url] to disk (a few downloads at a time). Logos on screen
+  /// ([visible]) always go before the background prefetch of the whole list.
   static Future<File?> fetch(String url, {bool visible = true}) {
     final done = _ready[url];
     if (done != null) return Future.value(done);
     if (_failed.contains(url)) return Future.value(null);
-    final running = _loading[url];
-    if (running != null) {
-      if (visible) {
-        final i = _queue.indexWhere((e) => e.key == url);
-        if (i > 0) _queue.insert(0, _queue.removeAt(i));
-      }
-      return running;
-    }
-    return _loading[url] =
-        _download(url, visible).whenComplete(() => _loading.remove(url));
+    if (visible) _wanted.add(url);
+    return _loading[url] ??=
+        _download(url).whenComplete(() => _loading.remove(url));
   }
 
-  static Future<File?> _download(String url, bool visible) async {
+  static const _maxParallel = 8;
+  static final Set<String> _wanted = {}; // urls shown on screen
+
+  static Future<void> _acquire(String url) async {
+    if (_active < _maxParallel) {
+      _active++;
+      return;
+    }
+    final c = Completer<void>();
+    _queue.add(MapEntry(url, c));
+    await c.future; // the slot is handed over by _release
+  }
+
+  static void _release() {
+    if (_queue.isEmpty) {
+      _active--;
+      return;
+    }
+    // On-screen logos first, then the rest in list order. (Checking at
+    // release time matters: after a channel refresh the whole list is
+    // queued before the screen asks for its logos.)
+    var i = _queue.indexWhere((e) => _wanted.contains(e.key));
+    if (i < 0) i = 0;
+    _queue.removeAt(i).value.complete();
+  }
+
+  static Future<File?> _download(String url) async {
     final f = _fileFor(url);
     if (await f.exists()) return _ready[url] = f;
-    if (_active >= 6) {
-      final e = MapEntry(url, Completer<void>());
-      visible ? _queue.insert(0, e) : _queue.add(e);
-      await e.value.future;
-    }
-    _active++;
+    await _acquire(url);
     try {
       final r = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
       if (r.statusCode != 200 || r.bodyBytes.isEmpty) throw 'HTTP ${r.statusCode}';
@@ -84,8 +98,8 @@ class LogoCache {
       _failed.add(url); // retried on next app start
       return null;
     } finally {
-      _active--;
-      if (_queue.isNotEmpty) _queue.removeAt(0).value.complete();
+      _wanted.remove(url);
+      _release();
     }
   }
 
