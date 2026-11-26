@@ -10,7 +10,8 @@ import 'package:window_manager/window_manager.dart';
 
 import '../app_state.dart';
 import '../diag.dart';
-import '../player_core.dart' show videoConfig, tuneForLive, streamStarted;
+import '../player_core.dart'
+    show videoConfig, tuneForLive, streamStarted, newPlayer, attachPlayerLog;
 import '../models.dart' show Channel;
 import 'common.dart';
 
@@ -81,38 +82,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   }
 
   void _createPlayer() {
-    _player = Player(
-        configuration: PlayerConfiguration(
-            logLevel: Diag.enabled ? MPVLogLevel.info : MPVLogLevel.error));
+    _player = newPlayer();
     _controller = VideoController(_player, configuration: videoConfig());
-    final gen = _playerGen;
-    final sw = Stopwatch()..start();
-    String t() => '[p$gen ${(sw.elapsedMilliseconds / 1000).toStringAsFixed(2)}s]';
-    Diag.log('${t()} create player (hwdec=${AppState.I.settings.hwdec}, format=${AppState.I.settings.streamFormat})');
-    _controller.platform.future.then((_) => Diag.log('${t()} video output ready'),
-        onError: (e) => Diag.log('${t()} video output FAILED: $e'));
-    _controller.id.addListener(() => Diag.log('${t()} texture id ${_controller.id.value}'));
-    _controller.rect.addListener(() => Diag.log('${t()} texture size ${_controller.rect.value?.width}x${_controller.rect.value?.height}'));
-    _controller.waitUntilFirstFrameRendered
-        .then((_) => Diag.log('${t()} FIRST FRAME rendered'), onError: (_) {});
-    _subs.add(_player.stream.playing.listen((v) => Diag.log('${t()} playing=$v')));
-    _subs.add(_player.stream.buffering.listen((v) => Diag.log('${t()} buffering=$v')));
-    _subs.add(_player.stream.width.listen((v) => Diag.log('${t()} width=$v')));
-    _subs.add(_player.stream.height.listen((v) => Diag.log('${t()} height=$v')));
-    _subs.add(_player.stream.videoParams.listen((v) =>
-        Diag.log('${t()} video ${v.w}x${v.h} ${v.pixelformat} ${v.hwPixelformat ?? ''}')));
-    _subs.add(_player.stream.audioParams.listen((v) =>
-        Diag.log('${t()} audio ${v.format} ${v.sampleRate}Hz ${v.channelCount}ch')));
-    _subs.add(_player.stream.tracks.listen((v) => Diag.log(
-        '${t()} tracks video=${v.video.length} audio=${v.audio.length}')));
-    _subs.add(_player.stream.error.listen((e) => Diag.log('${t()} ERROR $e')));
-    _subs.add(_player.stream.log.listen((l) {
-      final p = l.prefix;
-      if (l.level == 'error' || l.level == 'warn' ||
-          p.startsWith('vo') || p.startsWith('vd') || p == 'cplayer') {
-        Diag.log('${t()} mpv ${l.level} ${l.prefix}: ${l.text.trim()}');
-      }
-    }));
+    attachPlayerLog(_player, _controller, _subs, 'p$_playerGen');
     _subs.add(_player.stream.error.listen(_onError));
     _subs.add(_player.stream.completed.listen((done) {
       if (done) _scheduleRetry('The stream ended');

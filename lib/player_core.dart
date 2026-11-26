@@ -6,6 +6,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import 'app_state.dart';
+import 'diag.dart';
 import 'models.dart';
 
 /// Playback engine shared by the TV screens: opens channels, reconnects
@@ -13,8 +14,9 @@ import 'models.dart';
 class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
   PlayerCore() {
     WidgetsBinding.instance.addObserver(this);
-    player = Player();
+    player = newPlayer();
     controller = VideoController(player, configuration: videoConfig());
+    attachPlayerLog(player, controller, _subs, 'tv');
     _subs.add(player.stream.error.listen(_onError));
     _subs.add(player.stream.completed.listen((done) {
       if (done) _scheduleRetry('The stream ended');
@@ -59,6 +61,7 @@ class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
     await _ready;
     if (_disposed) return;
     channel = c;
+    Diag.log('[tv] open channel #${c.number} "${c.name}"');
     AppState.I.addRecent(c);
     _retryTimer?.cancel();
     _retries = 0;
@@ -76,6 +79,7 @@ class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
     _startTimer?.cancel();
     _startTimer = Timer(const Duration(seconds: 10), () {
       if (!_disposed && channel != null && !streamStarted(player)) {
+        Diag.log('[tv] nothing started after 10 s: reopening');
         _scheduleRetry('No picture or sound');
       }
     });
@@ -160,6 +164,41 @@ VideoControllerConfiguration videoConfig() {
     );
   }
   return VideoControllerConfiguration(enableHardwareAcceleration: hw);
+}
+
+/// A Player whose mpv messages reach [attachPlayerLog] when logging is on.
+Player newPlayer() => Player(
+    configuration: PlayerConfiguration(
+        logLevel: Diag.enabled ? MPVLogLevel.info : MPVLogLevel.error));
+
+/// Writes what [p] does to the local player log (see [Diag]).
+void attachPlayerLog(Player p, VideoController c, List<StreamSubscription<dynamic>> subs, String tag) {
+  if (!Diag.enabled) return;
+  final sw = Stopwatch()..start();
+  String t() => '[$tag ${(sw.elapsedMilliseconds / 1000).toStringAsFixed(2)}s]';
+  Diag.log('${t()} create player (${Platform.operatingSystem} ${Platform.operatingSystemVersion}, '
+      'hwdec=${AppState.I.settings.hwdec}, format=${AppState.I.settings.streamFormat})');
+  c.platform.future.then((_) => Diag.log('${t()} video output ready'),
+      onError: (e) => Diag.log('${t()} video output FAILED: $e'));
+  c.id.addListener(() => Diag.log('${t()} texture id ${c.id.value}'));
+  c.rect.addListener(() => Diag.log('${t()} texture size ${c.rect.value?.width}x${c.rect.value?.height}'));
+  c.waitUntilFirstFrameRendered.then((_) => Diag.log('${t()} FIRST FRAME rendered'), onError: (_) {});
+  subs.add(p.stream.playing.listen((v) => Diag.log('${t()} playing=$v')));
+  subs.add(p.stream.buffering.listen((v) => Diag.log('${t()} buffering=$v')));
+  subs.add(p.stream.videoParams.listen((v) =>
+      Diag.log('${t()} video ${v.w}x${v.h} ${v.pixelformat} ${v.hwPixelformat ?? ''}')));
+  subs.add(p.stream.audioParams.listen((v) =>
+      Diag.log('${t()} audio ${v.format} ${v.sampleRate}Hz ${v.channelCount}ch')));
+  subs.add(p.stream.tracks.listen((v) =>
+      Diag.log('${t()} tracks video=${v.video.length} audio=${v.audio.length}')));
+  subs.add(p.stream.error.listen((e) => Diag.log('${t()} ERROR $e')));
+  subs.add(p.stream.log.listen((l) {
+    final pre = l.prefix;
+    if (l.level == 'error' || l.level == 'warn' ||
+        pre.startsWith('vo') || pre.startsWith('vd') || pre == 'cplayer') {
+      Diag.log('${t()} mpv ${l.level} $pre: ${l.text.trim()}');
+    }
+  }));
 }
 
 /// True once the stream really runs: a picture size or a sound format is

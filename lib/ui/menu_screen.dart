@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../autostart.dart';
+import '../diag.dart';
 import '../models.dart';
 import 'channel_check_screen.dart';
 import 'common.dart';
@@ -131,6 +132,17 @@ class MenuScreen extends StatelessWidget {
                 'Find channels that don\'t work',
                 () => Navigator.of(context).push(MaterialPageRoute<void>(
                     builder: (_) => const ChannelCheckScreen()))),
+          if (Diag.enabled)
+            item(Icons.receipt_long_outlined, 'Share player log',
+                Platform.isWindows
+                    ? 'Open the log of what the player does'
+                    : kTvBuild
+                        ? 'Save it to the Download folder, to help find playback problems'
+                        : 'Send it to help find playback problems',
+                () async {
+              final msg = await Diag.share(tv: kTvBuild);
+              if (context.mounted) toast(context, msg);
+            }),
           item(Icons.system_update_alt_rounded, 'Check for updates', 'Version $appVersion',
               () async {
             if (appBuild == 0) {
