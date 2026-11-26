@@ -29,10 +29,11 @@ class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
     void started(_) {
       if (!streamStarted(player)) return;
       _startTimer?.cancel();
-      if (_retries != 0 || status != null || failed) {
+      if (_retries != 0 || status != null || failed || loading) {
         _retries = 0;
         status = null;
         failed = false;
+        loading = false;
         notifyListeners();
       }
     }
@@ -50,6 +51,9 @@ class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
   bool playing = false;
   String? status;
   bool failed = false;
+  /// Opening (or quietly retrying) a channel that hasn't started yet: the UI
+  /// shows only a calm spinner. [status] is set only when it finally fails.
+  bool loading = false;
   int _retries = 0;
   Timer? _retryTimer;
   Timer? _startTimer;
@@ -67,6 +71,7 @@ class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
     _retries = 0;
     status = null;
     failed = false;
+    loading = true;
     notifyListeners();
     await player.open(Media(AppState.I.streamUrlFor(c)));
     _watchStart();
@@ -102,12 +107,13 @@ class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
     if (_disposed || channel == null) return;
     if (_retries >= 5) {
       failed = true;
-      status = reason;
+      loading = false;
+      status = 'This channel isn\'t responding right now. Try again in a moment, or pick another channel.';
       notifyListeners();
       return;
     }
     _retries++;
-    status = 'Reconnecting… ($_retries/5)';
+    Diag.log('[tv] retry $_retries after: $reason');
     notifyListeners();
     _retryTimer?.cancel();
     _retryTimer = Timer(Duration(seconds: 2 * _retries), () {

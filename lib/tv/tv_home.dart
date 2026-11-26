@@ -527,7 +527,7 @@ class _TvHomeState extends State<TvHome> {
               ),
               if (_mode == _Mode.sidebar) _sidebar(cats),
               if (s.channels.isEmpty) Center(child: _emptyState(s)),
-              if (_core.status != null && !guideOn) Center(child: _statusCard()),
+              if ((_core.failed || _core.loading) && !guideOn) Center(child: _statusCard()),
               if (_mode == _Mode.info) _infoPanel(catName),
               if (_toast != null)
                 Positioned(top: 32, left: 0, right: 0, child: Center(child: _pill(_toast!))),
@@ -559,7 +559,10 @@ class _TvHomeState extends State<TvHome> {
         ],
       ]);
 
-  Widget _statusCard() => Container(
+  Widget _statusCard() => !_core.failed
+      ? const SizedBox(
+          width: 44, height: 44, child: CircularProgressIndicator(strokeWidth: 3))
+      : Container(
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
             color: const Color(0xE6000000), borderRadius: BorderRadius.circular(14)),

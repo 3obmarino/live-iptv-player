@@ -44,8 +44,9 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   bool _showList = false;
   ScrollController? _listCtrl;
 
-  String? _status;
+  String? _status; // only set when the channel finally failed
   bool _failed = false;
+  bool _loading = true; // calm spinner until picture or sound arrives
   int _retries = 0;
   Timer? _retryTimer;
 
@@ -97,10 +98,11 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       if (!mounted || !streamStarted(_player)) return;
       _startTimer?.cancel();
       _retries = 0;
-      if (_status != null || _failed) {
+      if (_status != null || _failed || _loading) {
         setState(() {
           _status = null;
           _failed = false;
+          _loading = false;
         });
       }
     }
@@ -153,6 +155,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     setState(() {
       _status = null;
       _failed = false;
+      _loading = true;
       _audioTracks = const [];
     });
     _showControls();
@@ -174,12 +177,13 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     if (_retries >= 5) {
       setState(() {
         _failed = true;
-        _status = reason;
+        _loading = false;
+        _status = 'This channel isn\'t responding right now. Try again in a moment, or pick another channel.';
       });
       return;
     }
     _retries++;
-    setState(() => _status = 'Reconnecting… ($_retries/5)');
+    Diag.log('[p$_playerGen] retry $_retries after: $reason');
     _retryTimer?.cancel();
     _retryTimer = Timer(Duration(seconds: 2 * _retries), () {
       if (mounted) {
@@ -211,7 +215,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
 
   void _maybeHide() {
     if (!mounted) return;
-    if (_overBars || !_playing) {
+    if (_overBars || !_playing || _loading) { // keep the spinner visible
       _hideTimer = Timer(const Duration(seconds: 2), _maybeHide);
       return;
     }
@@ -393,7 +397,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                           child: _overlay(context),
                         ),
                       ),
-                      if (_status != null) Center(child: _statusCard()),
+                      if (_failed) Center(child: _statusCard()),
                     ],
                    ),
                   ),
@@ -508,8 +512,12 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                     color: Colors.black.withOpacity(0.25),
                     border: Border.all(color: Colors.white, width: 3),
                   ),
-                  child: Icon(_playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                      size: 52, color: Colors.white),
+                  child: _loading
+                      ? const Padding(
+                          padding: EdgeInsets.all(22),
+                          child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white))
+                      : Icon(_playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                          size: 52, color: Colors.white),
                 ),
               ),
             ),
@@ -686,10 +694,6 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.8), borderRadius: BorderRadius.circular(14)),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        if (!_failed)
-          const SizedBox(
-              width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
-        if (_failed)
           const Text('Could not play this channel',
               style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
         const SizedBox(height: 10),
