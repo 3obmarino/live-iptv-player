@@ -21,13 +21,21 @@ class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
     }));
     _subs.add(player.stream.playing.listen((p) {
       playing = p;
-      if (p) {
+      notifyListeners();
+    }));
+    // The stream really runs once a picture size or sound format is known.
+    void started(_) {
+      if (!streamStarted(player)) return;
+      _startTimer?.cancel();
+      if (_retries != 0 || status != null || failed) {
         _retries = 0;
         status = null;
         failed = false;
+        notifyListeners();
       }
-      notifyListeners();
-    }));
+    }
+    _subs.add(player.stream.width.listen(started));
+    _subs.add(player.stream.audioParams.listen(started));
     _ready = _configure();
   }
 
@@ -42,6 +50,7 @@ class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
   bool failed = false;
   int _retries = 0;
   Timer? _retryTimer;
+  Timer? _startTimer;
   bool _disposed = false;
 
   Future<void> _configure() => tuneForLive(player);
@@ -57,6 +66,19 @@ class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
     failed = false;
     notifyListeners();
     await player.open(Media(AppState.I.streamUrlFor(c)));
+    _watchStart();
+  }
+
+  /// Some providers answer the first request for a channel that isn't
+  /// running yet with a short HLS playlist mpv refuses to play, while mpv
+  /// still reports "playing". Reopen if nothing has started after 10 s.
+  void _watchStart() {
+    _startTimer?.cancel();
+    _startTimer = Timer(const Duration(seconds: 10), () {
+      if (!_disposed && channel != null && !streamStarted(player)) {
+        _scheduleRetry('No picture or sound');
+      }
+    });
   }
 
   void retry() {
@@ -65,7 +87,10 @@ class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _onError(String e) {
-    if (player.state.playing) return; // harmless mpv noise while playing
+    // mpv reports harmless errors while a stream plays fine; only a stream
+    // that never started (no picture size, no sound format) needs a retry.
+    if (streamStarted(player)) return;
+    if (_retryTimer?.isActive ?? false) return; // one retry per burst
     _scheduleRetry(e);
   }
 
@@ -83,7 +108,10 @@ class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
     _retryTimer?.cancel();
     _retryTimer = Timer(Duration(seconds: 2 * _retries), () {
       final c = channel;
-      if (!_disposed && c != null) player.open(Media(AppState.I.streamUrlFor(c)));
+      if (!_disposed && c != null) {
+        player.open(Media(AppState.I.streamUrlFor(c)));
+        _watchStart();
+      }
     });
   }
 
@@ -114,6 +142,7 @@ class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
       s.cancel();
     }
     _retryTimer?.cancel();
+    _startTimer?.cancel();
     player.dispose();
     super.dispose();
   }
@@ -133,6 +162,11 @@ VideoControllerConfiguration videoConfig() {
   return VideoControllerConfiguration(enableHardwareAcceleration: hw);
 }
 
+/// True once the stream really runs: a picture size or a sound format is
+/// known. mpv's own "playing" flag turns on even when opening failed.
+bool streamStarted(Player p) =>
+    (p.state.width ?? 0) > 0 || (p.state.audioParams.sampleRate ?? 0) > 0;
+
 /// mpv settings for smooth, long-running live streams.
 Future<void> tuneForLive(Player player) async {
   final platform = player.platform;
@@ -142,6 +176,7 @@ Future<void> tuneForLive(Player player) async {
     'stream-lavf-o': 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5',
     // a few seconds of buffer smooths out network hiccups
     'cache': 'yes',
+    'cache-on-disk': 'no', // memory only (logged "Failed to create file cache")
     'cache-secs': '8',
     'demuxer-readahead-secs': '8',
     'demuxer-max-bytes': '64MiB',

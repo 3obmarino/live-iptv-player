@@ -10,7 +10,7 @@ import 'package:window_manager/window_manager.dart';
 
 import '../app_state.dart';
 import '../diag.dart';
-import '../player_core.dart' show videoConfig, tuneForLive;
+import '../player_core.dart' show videoConfig, tuneForLive, streamStarted;
 import '../models.dart' show Channel;
 import 'common.dart';
 
@@ -31,7 +31,6 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   late Player _player;
   late VideoController _controller;
   int _playerGen = 0; // new Video widget when the player is renewed
-  bool _renewed = false;
   late int _index;
   final List<StreamSubscription<dynamic>> _subs = [];
   final _focus = FocusNode();
@@ -78,7 +77,6 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     _configure().then((_) {
       if (!mounted) return;
       _open();
-      if (_desktop) _watchFirstFrame();
     });
   }
 
@@ -90,29 +88,29 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     final gen = _playerGen;
     final sw = Stopwatch()..start();
     String t() => '[p$gen ${(sw.elapsedMilliseconds / 1000).toStringAsFixed(2)}s]';
-    Diag.log('$t create player (hwdec=${AppState.I.settings.hwdec}, format=${AppState.I.settings.streamFormat})');
-    _controller.platform.future.then((_) => Diag.log('$t video output ready'),
-        onError: (e) => Diag.log('$t video output FAILED: $e'));
-    _controller.id.addListener(() => Diag.log('$t texture id ${_controller.id.value}'));
-    _controller.rect.addListener(() => Diag.log('$t texture size ${_controller.rect.value?.size}'));
+    Diag.log('${t()} create player (hwdec=${AppState.I.settings.hwdec}, format=${AppState.I.settings.streamFormat})');
+    _controller.platform.future.then((_) => Diag.log('${t()} video output ready'),
+        onError: (e) => Diag.log('${t()} video output FAILED: $e'));
+    _controller.id.addListener(() => Diag.log('${t()} texture id ${_controller.id.value}'));
+    _controller.rect.addListener(() => Diag.log('${t()} texture size ${_controller.rect.value?.width}x${_controller.rect.value?.height}'));
     _controller.waitUntilFirstFrameRendered
-        .then((_) => Diag.log('$t FIRST FRAME rendered'), onError: (_) {});
-    _subs.add(_player.stream.playing.listen((v) => Diag.log('$t playing=$v')));
-    _subs.add(_player.stream.buffering.listen((v) => Diag.log('$t buffering=$v')));
-    _subs.add(_player.stream.width.listen((v) => Diag.log('$t width=$v')));
-    _subs.add(_player.stream.height.listen((v) => Diag.log('$t height=$v')));
+        .then((_) => Diag.log('${t()} FIRST FRAME rendered'), onError: (_) {});
+    _subs.add(_player.stream.playing.listen((v) => Diag.log('${t()} playing=$v')));
+    _subs.add(_player.stream.buffering.listen((v) => Diag.log('${t()} buffering=$v')));
+    _subs.add(_player.stream.width.listen((v) => Diag.log('${t()} width=$v')));
+    _subs.add(_player.stream.height.listen((v) => Diag.log('${t()} height=$v')));
     _subs.add(_player.stream.videoParams.listen((v) =>
-        Diag.log('$t video ${v.w}x${v.h} ${v.pixelformat} ${v.hwPixelformat ?? ''}')));
+        Diag.log('${t()} video ${v.w}x${v.h} ${v.pixelformat} ${v.hwPixelformat ?? ''}')));
     _subs.add(_player.stream.audioParams.listen((v) =>
-        Diag.log('$t audio ${v.format} ${v.sampleRate}Hz ${v.channelCount}ch')));
+        Diag.log('${t()} audio ${v.format} ${v.sampleRate}Hz ${v.channelCount}ch')));
     _subs.add(_player.stream.tracks.listen((v) => Diag.log(
-        '$t tracks video=${v.video.length} audio=${v.audio.length}')));
-    _subs.add(_player.stream.error.listen((e) => Diag.log('$t ERROR $e')));
+        '${t()} tracks video=${v.video.length} audio=${v.audio.length}')));
+    _subs.add(_player.stream.error.listen((e) => Diag.log('${t()} ERROR $e')));
     _subs.add(_player.stream.log.listen((l) {
       final p = l.prefix;
       if (l.level == 'error' || l.level == 'warn' ||
           p.startsWith('vo') || p.startsWith('vd') || p == 'cplayer') {
-        Diag.log('$t mpv ${l.level} ${l.prefix}: ${l.text.trim()}');
+        Diag.log('${t()} mpv ${l.level} ${l.prefix}: ${l.text.trim()}');
       }
     }));
     _subs.add(_player.stream.error.listen(_onError));
@@ -121,15 +119,21 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     }));
     _subs.add(_player.stream.playing.listen((playing) {
       if (!mounted) return;
-      setState(() {
-        _playing = playing;
-        if (playing) {
+      setState(() => _playing = playing);
+    }));
+    void started(_) {
+      if (!mounted || !streamStarted(_player)) return;
+      _startTimer?.cancel();
+      _retries = 0;
+      if (_status != null || _failed) {
+        setState(() {
           _status = null;
           _failed = false;
-        }
-      });
-      if (playing) _retries = 0;
-    }));
+        });
+      }
+    }
+    _subs.add(_player.stream.width.listen(started));
+    _subs.add(_player.stream.audioParams.listen(started));
     _subs.add(_player.stream.volume.listen((v) {
       if (mounted) setState(() => _volume = v);
     }));
@@ -145,41 +149,19 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     }));
   }
 
-  /// Windows: the very first video after starting the app sometimes stays
-  /// black (sound and the stream run, but no picture reaches the window);
-  /// opening the channel again worked. Do that automatically: if no frame
-  /// has been drawn 6 s after the first channel starts playing video, renew
-  /// the player and video output once.
-  Future<void> _watchFirstFrame() async {
-    final c = _controller;
-    try {
-      // Measure from when the stream actually plays (providers can be slow).
-      if (!_player.state.playing) {
-        await _player.stream.playing.firstWhere((p) => p).timeout(const Duration(seconds: 40));
+  /// Some providers answer the first request for a channel that isn't
+  /// running yet with a short HLS playlist that mpv refuses to play, while
+  /// mpv still reports "playing" (black screen, no sound; opening it again
+  /// worked). Reopen automatically if nothing has started after 8 s.
+  Timer? _startTimer;
+  void _watchStart() {
+    _startTimer?.cancel();
+    _startTimer = Timer(const Duration(seconds: 8), () {
+      if (mounted && !streamStarted(_player)) {
+        Diag.log('[p$_playerGen] nothing started after 8 s: reopening');
+        _scheduleRetry('No picture or sound');
       }
-      if (!mounted || c != _controller) return;
-      await c.waitUntilFirstFrameRendered.timeout(const Duration(seconds: 6));
-    } on TimeoutException {
-      if (!mounted || _renewed || c != _controller) return;
-      final st = _player.state;
-      final hasVideo = st.tracks.video.any((t) => t.id != 'auto' && t.id != 'no');
-      Diag.log('[p$_playerGen] no frame 6 s after playing (playing=${st.playing}, video=$hasVideo)');
-      if (st.playing && hasVideo) await _renewPlayer();
-    } catch (_) {}
-  }
-
-  Future<void> _renewPlayer() async {
-    _renewed = true;
-    final old = _player;
-    for (final s in _subs) {
-      s.cancel();
-    }
-    _subs.clear();
-    _createPlayer();
-    if (mounted) setState(() => _playerGen++);
-    await _configure();
-    if (mounted) _open();
-    old.dispose();
+    });
   }
 
   Future<void> _configure() async {
@@ -203,12 +185,15 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     });
     _showControls();
     _player.open(Media(AppState.I.streamUrlFor(c)));
+    _watchStart();
   }
 
   void _onError(String e) {
     if (!mounted) return;
-    // mpv reports some harmless errors while playing fine; ignore those.
-    if (_player.state.playing) return;
+    // mpv reports harmless errors while a stream plays fine; only a stream
+    // that never started (no picture size, no sound format) needs a retry.
+    if (streamStarted(_player)) return;
+    if (_retryTimer?.isActive ?? false) return; // one retry per burst
     _scheduleRetry(e);
   }
 
@@ -225,7 +210,11 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
     setState(() => _status = 'Reconnecting… ($_retries/5)');
     _retryTimer?.cancel();
     _retryTimer = Timer(Duration(seconds: 2 * _retries), () {
-      if (mounted) _player.open(Media(AppState.I.streamUrlFor(_channel)));
+      if (mounted) {
+        Diag.log('[p$_playerGen] retry $_retries');
+        _player.open(Media(AppState.I.streamUrlFor(_channel)));
+        _watchStart();
+      }
     });
   }
 
@@ -342,6 +331,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _startTimer?.cancel();
     if (_saveTimer?.isActive ?? false) {
       _saveTimer!.cancel();
       AppState.I.save();
