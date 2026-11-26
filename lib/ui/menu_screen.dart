@@ -109,21 +109,21 @@ class MenuScreen extends StatelessWidget {
                 Icons.power_settings_new_rounded,
                 'Start on boot',
                 !Autostart.I.enabled
-                    ? 'Off – open Live TV when the device starts'
+                    ? 'Off – open LiveTV Player when the device starts'
                     : Autostart.I.permitted
                         ? 'On'
-                        : 'On – allow "Display over other apps" for Live TV to finish',
+                        : 'On – allow "Display over other apps" for LiveTV Player to finish',
                 () async {
               final turnOn = !Autostart.I.enabled;
               final ok = await Autostart.I.setEnabled(turnOn);
               if (!context.mounted) return;
               if (!ok) {
                 toast(context,
-                    'Open Android Settings > Apps > Live TV and allow "Display over other apps"');
+                    'Open Android Settings > Apps > LiveTV Player and allow "Display over other apps"');
               } else if (!turnOn) {
                 toast(context, 'Start on boot is off');
               } else if (Autostart.I.permitted) {
-                toast(context, 'Live TV will open when the device starts');
+                toast(context, 'LiveTV Player will open when the device starts');
               }
             }),
           if (!Platform.isAndroid)
@@ -149,7 +149,7 @@ class MenuScreen extends StatelessWidget {
 
         final about = Padding(
           padding: const EdgeInsets.only(top: 20, left: 8),
-          child: Text('Live TV Player $appVersion · © 2026 $kCompany',
+          child: Text('LiveTV Player $appVersion · © 2026 $kCompany',
               style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         );
 
@@ -255,7 +255,7 @@ void showUpdateDialog(BuildContext context) {
                 if (Platform.isAndroid && !u.installing) ...[
                   const SizedBox(height: 12),
                   const Text(
-                      'Android may ask you to allow Live TV to install apps the first time.',
+                      'Android may ask you to allow LiveTV Player to install apps the first time.',
                       style: TextStyle(fontSize: 13)),
                 ],
               ],

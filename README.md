@@ -1,4 +1,4 @@
-# Live TV Player
+# LiveTV Player
 
 A small, clean IPTV player: **Live TV + TV guide (EPG) only**, for
 Windows, Android phones and Google TV.

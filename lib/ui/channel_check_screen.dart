@@ -151,7 +151,7 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
 
   String _report() {
     final b = StringBuffer()
-      ..writeln('Live TV – channels that did not work')
+      ..writeln('LiveTV Player – channels that did not work')
       ..writeln('Profile: ${AppState.I.active?.name ?? ''}')
       ..writeln('Checked: ${_started ?? DateTime.now()}')
       ..writeln('Scope: ${_scope == _kAll ? 'All channels' : _categoryName(_scope)}')

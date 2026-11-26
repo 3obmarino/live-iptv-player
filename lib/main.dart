@@ -12,7 +12,7 @@ import 'ui/profiles_screen.dart';
 import 'tv/tv_home.dart';
 import 'updater.dart';
 
-const appTitle = 'Live TV Player';
+const appTitle = 'LiveTV Player';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

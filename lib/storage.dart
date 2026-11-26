@@ -51,29 +51,33 @@ class Store {
     if (await f.exists()) await f.delete();
   }
 
-  /// Up to 1.0.111 the Windows app kept its data in
-  /// %APPDATA%\dk.livetvplayer\live_tv_player. Since the publisher became
-  /// "Ukendt Software" it is %APPDATA%\Ukendt Software\Live TV Player:
-  /// move the old folder over once (profiles, encrypted login, guide, logos).
+  /// Older Windows versions kept their data elsewhere: up to 1.0.111 in
+  /// %APPDATA%\dk.livetvplayer\live_tv_player, in 1.0.112 in
+  /// %APPDATA%\Ukendt Software\Live TV Player. Now the folder follows the
+  /// publisher and name: %APPDATA%\Ukendt Software\LiveTV Player. Move the
+  /// newest old folder over once (profiles, encrypted login, guide, logos).
   static Future<void> _moveOldWindowsData(Directory target) async {
     try {
       final appData = Platform.environment['APPDATA'];
       if (appData == null) return;
-      final oldParent = Directory('$appData\\dk.livetvplayer');
-      final old = Directory('${oldParent.path}\\live_tv_player');
-      if (old.path.toLowerCase() == target.path.toLowerCase()) return;
-      if (!await old.exists()) return;
-      if (await File('${target.path}\\state.json').exists()) return; // already moved
-      await target.parent.create(recursive: true);
-      if (await target.exists()) {
-        if (await target.list().isEmpty) {
+      if (await File('${target.path}\\state.json').exists()) return; // done
+      final candidates = [
+        Directory('$appData\\Ukendt Software\\Live TV Player'),
+        Directory('$appData\\dk.livetvplayer\\live_tv_player'),
+      ];
+      for (final old in candidates) {
+        if (old.path.toLowerCase() == target.path.toLowerCase()) continue;
+        if (!await old.exists()) continue;
+        await target.parent.create(recursive: true);
+        if (await target.exists()) {
+          if (!await target.list().isEmpty) return; // something there: leave both
           await target.delete();
-        } else {
-          return; // something already there: leave both alone
         }
+        await old.rename(target.path);
+        final parent = old.parent;
+        if (await parent.exists() && await parent.list().isEmpty) await parent.delete();
+        return;
       }
-      await old.rename(target.path);
-      if (await oldParent.list().isEmpty) await oldParent.delete();
     } catch (_) {
       // Worst case the app starts without profiles; the old folder is kept.
     }

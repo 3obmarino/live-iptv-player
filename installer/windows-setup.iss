@@ -1,7 +1,7 @@
 ; Inno Setup script - builds LiveTV-Player-Windows-Setup-<version>.exe
 ; Compiled by the GitHub workflow:  ISCC /DMyAppVersion=1.0.x installer\windows-setup.iss
 
-#define MyAppName "Live TV Player"
+#define MyAppName "LiveTV Player"
 #define MyAppExe "live_tv_player.exe"
 #ifndef MyAppVersion
   #define MyAppVersion "1.0.0"
@@ -22,6 +22,9 @@ VersionInfoVersion={#MyAppVersion}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
+; New name: new Start menu folder and program folder (old ones removed below)
+UsePreviousGroup=no
+UsePreviousAppDir=no
 OutputDir=..\dist
 OutputBaseFilename=LiveTV-Player-Windows-Setup-{#MyAppVersion}
 Compression=lzma2
@@ -49,6 +52,12 @@ Source: "..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignore
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; Tasks: desktopicon
 
+[InstallDelete]
+; Shortcuts from before the rename to "LiveTV Player" (1.0.113)
+Type: filesandordirs; Name: "{autoprograms}\Live TV Player"
+Type: filesandordirs; Name: "{autopf}\Live TV Player"
+Type: files; Name: "{autodesktop}\Live TV Player.lnk"
+
 [Run]
 Filename: "{app}\{#MyAppExe}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall
 
@@ -68,22 +77,24 @@ danish.RemoveData=Skal dine profiler, favoritter, tv-guide og kanallogoer også 
 
 [Code]
 // Clean uninstall: the app keeps its data (profiles with the encrypted
-// login, channel list, TV guide, logo cache) in %APPDATA%\Ukendt Software\Live TV Player.
+// login, channel list, TV guide, logo cache) in %APPDATA%\Ukendt Software\LiveTV Player.
 // Ask before deleting it; a silent uninstall keeps it.
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
-  DataDir, OldDir, CompanyDir: String;
+  DataDir, OldDir, OldDir2, CompanyDir: String;
 begin
   if CurUninstallStep = usPostUninstall then
   begin
     CompanyDir := ExpandConstant('{userappdata}\Ukendt Software');
-    DataDir := CompanyDir + '\Live TV Player';
+    DataDir := CompanyDir + '\LiveTV Player';
+    OldDir2 := CompanyDir + '\Live TV Player'; // 1.0.112
     OldDir := ExpandConstant('{userappdata}\dk.livetvplayer'); // before 1.0.112
-    if (DirExists(DataDir) or DirExists(OldDir)) and (not UninstallSilent) then
+    if (DirExists(DataDir) or DirExists(OldDir) or DirExists(OldDir2)) and (not UninstallSilent) then
       if MsgBox(CustomMessage('RemoveData'), mbConfirmation, MB_YESNO) = IDYES then
       begin
         DelTree(DataDir, True, True, True);
         DelTree(OldDir, True, True, True);
+        DelTree(OldDir2, True, True, True);
         RemoveDir(CompanyDir); // only if no other Ukendt Software app uses it
       end;
   end;
