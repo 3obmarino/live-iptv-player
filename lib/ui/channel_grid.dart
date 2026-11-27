@@ -23,8 +23,10 @@ class ChannelGrid extends StatelessWidget {
       child: GridView.builder(
         padding: const EdgeInsets.all(8),
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 460,
-          mainAxisExtent: 76,
+          // Wider tiles (5 instead of 6 columns on a big screen) and room for
+          // a time line + two lines of title, so event names aren't cut off.
+          maxCrossAxisExtent: 540,
+          mainAxisExtent: 92,
           crossAxisSpacing: 4,
           mainAxisSpacing: 2,
         ),
@@ -52,6 +54,7 @@ class ChannelTile extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final cur = currentProgramme(channel, now);
     final fav = s.isFavorite(channel);
+    final split = splitEventName(channel.name);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -68,10 +71,24 @@ class ChannelTile extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(channel.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600)),
+                    if (split.when != null)
+                      Text(split.when!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: accentOf(context))),
+                    Tooltip(
+                      message: channel.name,
+                      waitDuration: const Duration(milliseconds: 600),
+                      child: Text(split.title,
+                          // Event channels rarely have a guide: give the name two lines.
+                          maxLines: cur == null ? 2 : 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 14.5, fontWeight: FontWeight.w600, height: 1.25)),
+                    ),
                     if (cur != null) ...[
                       const SizedBox(height: 2),
                       Text(cur.title,
@@ -122,3 +139,24 @@ class ChannelTile extends StatelessWidget {
     );
   }
 }
+
+/// Event channels are often named like "[DS] (27/11) 19:25 Herning - Esbjerg"
+/// or "16:20 Kairat Almaty - Mjällby 11/26 [Disney+ DK]". Show the date and
+/// time on their own small line above the name, so the match itself has room.
+({String? when, String title}) splitEventName(String name) {
+  final m = _eventRe.firstMatch(name);
+  if (m == null) return (when: null, title: name);
+  final title = m.group(4)!.trim();
+  if (title.isEmpty) return (when: null, title: name);
+  final tag = m.group(1)?.replaceAll(RegExp(r'[\[\]]'), '').trim();
+  final date = m.group(2)?.replaceAll(RegExp(r'[()]'), '').trim();
+  final when = [
+    if (tag != null && tag.isNotEmpty) tag,
+    if (date != null && date.isNotEmpty) date,
+    m.group(3)!,
+  ].join('  ·  ');
+  return (when: when, title: title);
+}
+
+final _eventRe = RegExp(
+    r'^\s*(\[[^\]]{1,10}\]\s*)?(\(?\d{1,2}[/.]\d{1,2}\)?\s+)?(\d{1,2}[:.]\d{2})\s*[-–|:]?\s+(.+)$');
