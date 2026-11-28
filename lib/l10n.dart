@@ -224,6 +224,7 @@ const _da = <String, String>{
   'Space   pause         F   fullscreen (or double-click)\n':
       'Mellemrum   pause         F   fuld skærm (eller dobbeltklik)\n',
   '↑ / ↓  or  PgUp / PgDn   change channel\n': '↑ / ↓  eller  PgUp / PgDn   skift kanal\n',
+  '← / →   volume        M   mute\n': '← / →   lydstyrke     M   lyd fra\n',
   'L   channel list      I   programme info      Esc   back':
       'L   kanalliste      I   programinfo      Esc   tilbage',
 

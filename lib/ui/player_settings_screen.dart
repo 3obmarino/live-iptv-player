@@ -82,10 +82,10 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
               Text(tr('Keyboard in the player'), style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Text(
-                tr('↑ / ↓  or  PgUp / PgDn   change channel\n')
-                '← / →   volume        M   mute\n'
-                tr('Space   pause         F   fullscreen (or double-click)\n')
-                tr('L   channel list      I   programme info      Esc   back'),
+                tr('↑ / ↓  or  PgUp / PgDn   change channel\n') +
+                    tr('← / →   volume        M   mute\n') +
+                    tr('Space   pause         F   fullscreen (or double-click)\n') +
+                    tr('L   channel list      I   programme info      Esc   back'),
                 style: TextStyle(color: cs.onSurfaceVariant, height: 1.6),
               ),
             ],
