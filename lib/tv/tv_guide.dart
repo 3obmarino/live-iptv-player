@@ -23,6 +23,7 @@ class TvGuide extends StatefulWidget {
     required this.playingId,
     required this.categoryName,
     required this.preview,
+    this.emptyText,
   });
   final List<Channel> channels;
   final int initialIndex;
@@ -31,6 +32,9 @@ class TvGuide extends StatefulWidget {
 
   /// Area (in this widget's coordinates) left free for the video preview.
   final Rect preview;
+
+  /// Shown instead of the grid when [channels] is empty.
+  final String? emptyText;
 
   @override
   State<TvGuide> createState() => TvGuideState();
@@ -193,7 +197,7 @@ class TvGuideState extends State<TvGuide> {
       return ColoredBox(
         color: Color(0xFF101114),
         child: Center(
-            child: Text(tr('No channels in this category'),
+            child: Text(widget.emptyText ?? tr('No channels in this category'),
                 style: TextStyle(color: Colors.white70, fontSize: 18))),
       );
     }

@@ -61,8 +61,11 @@ class MainActivity : FlutterActivity() {
             return
         }
         if (requestCode == voiceRequest) {
+            // Phones return EXTRA_RESULTS; some TV recognizers only fill the
+            // search query extra.
             val text = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-            voiceResult?.success(if (resultCode == RESULT_OK) text else null)
+                ?: data?.getStringExtra(android.app.SearchManager.QUERY)
+            voiceResult?.success(if (resultCode == RESULT_OK || !text.isNullOrBlank()) text else null)
             voiceResult = null
             return
         }

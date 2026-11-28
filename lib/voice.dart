@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
+import 'epg.dart';
 import 'l10n.dart';
+import 'models.dart';
 
 /// Voice search with the device's own speech recognizer (Android phones and
 /// Google TV). Nothing is recorded by the app itself.
@@ -59,4 +61,30 @@ bool matchesSearch(String name, String query) {
   final words = q.split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
   if (words.every((w) => n.contains(w))) return true;
   return searchKey(name).contains(searchKey(query));
+}
+
+/// Search result list: channels whose name matches first, then channels with
+/// a programme (now or later in the TV guide) whose title matches, soonest
+/// first. So "kessler" finds the channel showing a programme of that name.
+List<Channel> searchChannels(List<Channel> channels, EpgData epg, String query) {
+  final q = query.trim();
+  if (q.isEmpty) return const <Channel>[];
+  final now = DateTime.now().millisecondsSinceEpoch;
+  final byName = <Channel>[];
+  final byProg = <(Channel, int)>[];
+  for (final c in channels) {
+    if (matchesSearch(c.name, q)) {
+      byName.add(c);
+      continue;
+    }
+    for (final p in epg.forChannel(c)) {
+      if (p.stop <= now) continue;
+      if (matchesSearch(p.title, q)) {
+        byProg.add((c, p.start));
+        break;
+      }
+    }
+  }
+  byProg.sort((a, b) => a.$2.compareTo(b.$2));
+  return [...byName, for (final e in byProg) e.$1];
 }

@@ -92,10 +92,12 @@ const _da = <String, String>{
   'Say a channel name': 'Sig et kanalnavn',
   'Search': 'Søg',
   'Search: {q}': 'Søg: {q}',
-  'Search (speak or type)': 'Søg (tal eller skriv)',
   'Voice search': 'Talesøgning',
   'No channels match "{q}"': 'Ingen kanaler matcher "{q}"',
   'Search channels by name': 'Søg kanaler efter navn',
+  'Search channels or programmes': 'Søg kanal eller program',
+  'No results for "{q}"': 'Ingen resultater for "{q}"',
+  'Nothing heard. Press OK again to type': 'Intet hørt. Tryk OK igen for at skrive',
 
   'Backup and restore': 'Backup og gendannelse',
   'Save or restore profiles, favourites and settings': 'Gem eller hent profiler, favoritter og indstillinger',

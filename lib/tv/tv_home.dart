@@ -15,6 +15,7 @@ import 'tv_guide.dart';
 import '../l10n.dart';
 import '../voice.dart';
 import '../reminders.dart';
+import '../diag.dart';
 
 enum _Mode { play, info, guide, sidebar }
 
@@ -133,7 +134,7 @@ class _TvHomeState extends State<TvHome> {
           (favCats.contains(a.id) ? 0 : 1).compareTo(favCats.contains(b.id) ? 0 : 1));
     return [
       _Cat('__search__',
-          _searchQuery.isEmpty ? tr('Search (speak or type)') : tr('Search: {q}', {'q': _searchQuery})),
+          _searchQuery.isEmpty ? tr('Search') : tr('Search: {q}', {'q': _searchQuery})),
       _Cat('__fav__', tr('Favourites')),
       _Cat('__all__', tr('All channels')),
       for (final c in cats) _Cat(c.id, c.name),
@@ -147,9 +148,7 @@ class _TvHomeState extends State<TvHome> {
     final id = cats[_cat].id;
     final fav = s.active?.favorites ?? const <String>{};
     _list = switch (id) {
-      '__search__' => _searchQuery.isEmpty
-          ? const <Channel>[]
-          : s.channels.where((c) => matchesSearch(c.name, _searchQuery)).toList(),
+      '__search__' => searchChannels(s.channels, s.epg, _searchQuery),
       '__fav__' => s.channels.where((c) => fav.contains(c.id)).toList(),
       '__all__' => s.channels,
       _ => s.channels.where((c) => c.categoryId == id).toList(),
@@ -422,13 +421,26 @@ class _TvHomeState extends State<TvHome> {
   }
 
   /// Search: speak (Google voice) or, without a recognizer, type in the
-  /// Android input dialog. Results show as a list in the guide.
+  /// Android input dialog. Results show as a list in the guide. If the voice
+  /// search gives nothing back, pressing OK again within 10 s opens the
+  /// keyboard instead.
+  DateTime? _voiceFailedAt;
+
   Future<void> _search() async {
     String? text;
-    if (await Voice.available()) {
+    final typeNow = _voiceFailedAt != null &&
+        DateTime.now().difference(_voiceFailedAt!) < const Duration(seconds: 10);
+    _voiceFailedAt = null;
+    if (!typeNow && await Voice.available()) {
       text = await Voice.listen();
+      Diag.log('voice search: ${text == null ? 'no result' : '"$text"'}');
+      if (text == null || text.trim().isEmpty) {
+        _voiceFailedAt = DateTime.now();
+        if (mounted) _showToast(tr('Nothing heard. Press OK again to type'));
+        return;
+      }
     } else {
-      text = await Voice.type(tr('Search channels by name'), _searchQuery);
+      text = await Voice.type(tr('Search channels or programmes'), _searchQuery);
     }
     text = text?.trim();
     if (!mounted || text == null || text.isEmpty) return;
@@ -438,6 +450,7 @@ class _TvHomeState extends State<TvHome> {
       _catSel = 0;
       _rebuildList();
     });
+    Diag.log('search "$text": ${_list.length} channel(s)');
     _openGuide();
   }
 
@@ -581,6 +594,9 @@ class _TvHomeState extends State<TvHome> {
                     playingId: _core.channel?.id,
                     categoryName: catName,
                     preview: preview,
+                    emptyText: _cat == 0 && _searchQuery.isNotEmpty
+                        ? tr('No results for "{q}"', {'q': _searchQuery})
+                        : null,
                   ),
                 ),
               // The video surface always stays full-screen; the guide preview
