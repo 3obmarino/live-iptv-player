@@ -1,0 +1,84 @@
+11-28 14:05:14.133  2424  2424 I media_kit: package:media_kit_libs_android_video attached.
+11-28 14:05:14.133  2424  2445 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(105)] Using the Impeller rendering backend (OpenGLES).
+11-28 14:05:14.134  2424  2424 D media_kit: Android
+11-28 14:05:14.134  2424  2424 D media_kit: emu64x
+11-28 14:05:14.134  2424  2424 D media_kit: Android/sdk_phone64_x86_64/emu64x:14/UE1A.230829.036.A1/11228894:userdebug/test-keys
+11-28 14:05:14.134  2424  2424 D media_kit: ranchu
+11-28 14:05:14.135  2424  2424 D media_kit: Android SDK built for x86_64
+11-28 14:05:14.135  2424  2424 D media_kit: unknown
+11-28 14:05:14.135  2424  2424 D media_kit: sdk_phone64_x86_64
+11-28 14:05:14.135  2424  2424 I media_kit: Saved application context.
+11-28 14:05:14.468  2424  2424 I VideoOutputManager: com.alexmercerind.media_kit_video.VideoOutputManager.create: 126645148736032
+11-28 14:05:18.133  2424  2424 I VideoOutputManager: com.alexmercerind.media_kit_video.VideoOutputManager.setSurfaceSize: 126645148736032 1920 1080
+11-28 14:05:18.135  2424  2424 I flutter : VideoOutput.Resize
+11-28 14:05:18.135  2424  2424 I flutter : {rect: {top: 0, left: 0, width: 1920, height: 1080}, wid: 12710, handle: 126645148736032, id: 0}
+11-28 14:05:42.041  2718  2718 I media_kit: package:media_kit_libs_android_video attached.
+11-28 14:05:42.045  2718  2718 D media_kit: Android
+11-28 14:05:42.049  2718  2718 D media_kit: emu64x
+11-28 14:05:42.049  2718  2718 D media_kit: Android/sdk_phone64_x86_64/emu64x:14/UE1A.230829.036.A1/11228894:userdebug/test-keys
+11-28 14:05:42.049  2718  2718 D media_kit: ranchu
+11-28 14:05:42.049  2718  2718 D media_kit: Android SDK built for x86_64
+11-28 14:05:42.049  2718  2718 D media_kit: unknown
+11-28 14:05:42.049  2718  2718 D media_kit: sdk_phone64_x86_64
+11-28 14:05:42.049  2718  2718 I media_kit: Saved application context.
+11-28 14:05:42.066  2718  2739 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(105)] Using the Impeller rendering backend (OpenGLES).
+11-28 14:05:42.317  2718  2718 I VideoOutputManager: com.alexmercerind.media_kit_video.VideoOutputManager.create: 126645148750832
+11-28 14:05:46.851  2718  2718 I VideoOutputManager: com.alexmercerind.media_kit_video.VideoOutputManager.setSurfaceSize: 126645148750832 1920 1080
+11-28 14:05:46.855  2718  2718 I flutter : VideoOutput.Resize
+11-28 14:05:46.855  2718  2718 I flutter : {rect: {top: 0, left: 0, width: 1920, height: 1080}, wid: 12710, handle: 126645148750832, id: 0}
+11-28 14:06:27.527  2941  2962 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(105)] Using the Impeller rendering backend (OpenGLES).
+11-28 14:06:27.545  2941  2941 I media_kit: package:media_kit_libs_android_video attached.
+11-28 14:06:27.546  2941  2941 D media_kit: Android
+11-28 14:06:27.546  2941  2941 D media_kit: emu64x
+11-28 14:06:27.546  2941  2941 D media_kit: Android/sdk_phone64_x86_64/emu64x:14/UE1A.230829.036.A1/11228894:userdebug/test-keys
+11-28 14:06:27.546  2941  2941 D media_kit: ranchu
+11-28 14:06:27.546  2941  2941 D media_kit: Android SDK built for x86_64
+11-28 14:06:27.546  2941  2941 D media_kit: unknown
+11-28 14:06:27.546  2941  2941 D media_kit: sdk_phone64_x86_64
+11-28 14:06:27.546  2941  2941 I media_kit: Saved application context.
+11-28 14:06:27.815  2941  2941 I VideoOutputManager: com.alexmercerind.media_kit_video.VideoOutputManager.create: 126645148738400
+11-28 14:06:32.542  2941  2941 I VideoOutputManager: com.alexmercerind.media_kit_video.VideoOutputManager.setSurfaceSize: 126645148738400 1920 1080
+11-28 14:06:32.546  2941  2941 I flutter : VideoOutput.Resize
+11-28 14:06:32.546  2941  2941 I flutter : {rect: {top: 0, left: 0, width: 1920, height: 1080}, wid: 12710, handle: 126645148738400, id: 0}
+11-28 14:07:01.229  3134  3155 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(105)] Using the Impeller rendering backend (OpenGLES).
+11-28 14:07:01.245  3134  3134 I media_kit: package:media_kit_libs_android_video attached.
+11-28 14:07:01.246  3134  3134 D media_kit: Android
+11-28 14:07:01.246  3134  3134 D media_kit: emu64x
+11-28 14:07:01.246  3134  3134 D media_kit: Android/sdk_phone64_x86_64/emu64x:14/UE1A.230829.036.A1/11228894:userdebug/test-keys
+11-28 14:07:01.246  3134  3134 D media_kit: ranchu
+11-28 14:07:01.246  3134  3134 D media_kit: Android SDK built for x86_64
+11-28 14:07:01.246  3134  3134 D media_kit: unknown
+11-28 14:07:01.246  3134  3134 D media_kit: sdk_phone64_x86_64
+11-28 14:07:01.246  3134  3134 I media_kit: Saved application context.
+11-28 14:07:01.696  3134  3134 I VideoOutputManager: com.alexmercerind.media_kit_video.VideoOutputManager.create: 126645148762080
+11-28 14:07:06.056  3134  3134 I VideoOutputManager: com.alexmercerind.media_kit_video.VideoOutputManager.setSurfaceSize: 126645148762080 1920 1080
+11-28 14:07:06.066  3134  3134 I flutter : VideoOutput.Resize
+11-28 14:07:06.068  3134  3134 I flutter : {rect: {top: 0, left: 0, width: 1920, height: 1080}, wid: 12238, handle: 126645148762080, id: 0}
+11-28 14:07:47.159  3341  3341 I media_kit: package:media_kit_libs_android_video attached.
+11-28 14:07:47.160  3341  3341 D media_kit: Android
+11-28 14:07:47.160  3341  3341 D media_kit: emu64x
+11-28 14:07:47.160  3341  3341 D media_kit: Android/sdk_phone64_x86_64/emu64x:14/UE1A.230829.036.A1/11228894:userdebug/test-keys
+11-28 14:07:47.160  3341  3341 D media_kit: ranchu
+11-28 14:07:47.160  3341  3341 D media_kit: Android SDK built for x86_64
+11-28 14:07:47.160  3341  3341 D media_kit: unknown
+11-28 14:07:47.160  3341  3341 D media_kit: sdk_phone64_x86_64
+11-28 14:07:47.161  3341  3341 I media_kit: Saved application context.
+11-28 14:07:47.166  3341  3362 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(105)] Using the Impeller rendering backend (OpenGLES).
+11-28 14:07:47.617  3341  3341 I VideoOutputManager: com.alexmercerind.media_kit_video.VideoOutputManager.create: 126645148753200
+11-28 14:07:52.255  3341  3341 I VideoOutputManager: com.alexmercerind.media_kit_video.VideoOutputManager.setSurfaceSize: 126645148753200 1920 1080
+11-28 14:07:52.260  3341  3341 I flutter : VideoOutput.Resize
+11-28 14:07:52.260  3341  3341 I flutter : {rect: {top: 0, left: 0, width: 1920, height: 1080}, wid: 12714, handle: 126645148753200, id: 0}
+11-28 14:08:30.213  3542  3542 I media_kit: package:media_kit_libs_android_video attached.
+11-28 14:08:30.214  3542  3542 D media_kit: Android
+11-28 14:08:30.215  3542  3542 D media_kit: emu64x
+11-28 14:08:30.215  3542  3542 D media_kit: Android/sdk_phone64_x86_64/emu64x:14/UE1A.230829.036.A1/11228894:userdebug/test-keys
+11-28 14:08:30.215  3542  3542 D media_kit: ranchu
+11-28 14:08:30.215  3542  3542 D media_kit: Android SDK built for x86_64
+11-28 14:08:30.215  3542  3542 D media_kit: unknown
+11-28 14:08:30.215  3542  3542 D media_kit: sdk_phone64_x86_64
+11-28 14:08:30.215  3542  3542 I media_kit: Saved application context.
+11-28 14:08:30.221  3542  3563 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(105)] Using the Impeller rendering backend (OpenGLES).
+11-28 14:08:30.663  3542  3542 I VideoOutputManager: com.alexmercerind.media_kit_video.VideoOutputManager.create: 126645148753200
+11-28 14:08:35.615  3542  3542 I VideoOutputManager: com.alexmercerind.media_kit_video.VideoOutputManager.setSurfaceSize: 126645148753200 1920 1080
+11-28 14:08:35.618  3542  3542 I flutter : VideoOutput.Resize
+11-28 14:08:35.618  3542  3542 I flutter : {rect: {top: 0, left: 0, width: 1920, height: 1080}, wid: 12714, handle: 126645148753200, id: 0}
