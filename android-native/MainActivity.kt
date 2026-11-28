@@ -22,8 +22,43 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private var voiceResult: MethodChannel.Result? = null
     private val voiceRequest = 4711
+    private var pickResult: MethodChannel.Result? = null
+    private val pickRequest = 4712
+    private var openedFile: String? = null // backup opened from a file manager
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        takeViewIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        takeViewIntent(intent)
+    }
+
+    private fun takeViewIntent(i: Intent?) {
+        if (i?.action == Intent.ACTION_VIEW && i.data != null) {
+            openedFile = readText(i.data!!)
+        }
+    }
+
+    private fun readText(uri: Uri): String? = try {
+        contentResolver.openInputStream(uri)?.use { s ->
+            // backups are small; refuse anything big
+            val bytes = s.readBytes()
+            if (bytes.size > 5_000_000) null else String(bytes)
+        }
+    } catch (e: Exception) {
+        null
+    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == pickRequest) {
+            val uri = data?.data
+            pickResult?.success(if (resultCode == RESULT_OK && uri != null) readText(uri) else null)
+            pickResult = null
+            return
+        }
         if (requestCode == voiceRequest) {
             val text = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
             voiceResult?.success(if (resultCode == RESULT_OK) text else null)
@@ -96,7 +131,7 @@ class MainActivity : FlutterActivity() {
                     "saveToDownloads" -> {
                         val name = call.argument<String>("name") ?: "LiveTV-Player-log.txt"
                         val text = call.argument<String>("text") ?: ""
-                        result.success(saveToDownloads(name, text))
+                        result.success(saveToDownloads(name, text, call.argument<String>("mime") ?: "text/plain"))
                     }
                     // TV text entry in a plain Android dialog: the TV keyboard and
                     // remote work with it like in any native TV app (Flutter sees
@@ -128,16 +163,46 @@ class MainActivity : FlutterActivity() {
                             }
                         }
                     }
+                    // Backup files: the app's own ones in Download, a picked file,
+                    // or one opened with "Open with LiveTV Player".
+                    "listBackups" -> result.success(listBackups(call.argument<String>("prefix") ?: ""))
+                    "readUri" -> result.success(
+                        call.argument<String>("uri")?.let { readText(Uri.parse(it)) }
+                    )
+                    "pickFile" -> {
+                        val i = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = "*/*"
+                            putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/json", "text/plain", "application/octet-stream"))
+                        }
+                        if (i.resolveActivity(packageManager) == null) {
+                            result.success("") // no picker on this device
+                        } else {
+                            pickResult?.success(null)
+                            pickResult = result
+                            try {
+                                @Suppress("DEPRECATION")
+                                startActivityForResult(i, pickRequest)
+                            } catch (e: Exception) {
+                                pickResult = null
+                                result.success("")
+                            }
+                        }
+                    }
+                    "takeOpenedFile" -> {
+                        result.success(openedFile)
+                        openedFile = null
+                    }
                     else -> result.notImplemented()
                 }
             }
     }
 
-    private fun saveToDownloads(name: String, text: String): String? = try {
+    private fun saveToDownloads(name: String, text: String, mime: String = "text/plain"): String? = try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val values = ContentValues().apply {
                 put(MediaStore.Downloads.DISPLAY_NAME, name)
-                put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+                put(MediaStore.Downloads.MIME_TYPE, mime)
                 put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
             }
             val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
@@ -198,5 +263,34 @@ class MainActivity : FlutterActivity() {
         dlg.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
         dlg.show()
         input.requestFocus()
+    }
+
+    private fun listBackups(prefix: String): List<Map<String, String>> {
+        val out = mutableListOf<Map<String, String>>()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            @Suppress("DEPRECATION")
+            val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            dir.listFiles()?.filter { it.name.startsWith(prefix) }?.forEach {
+                out.add(mapOf("name" to it.name, "uri" to Uri.fromFile(it).toString()))
+            }
+            return out
+        }
+        try {
+            val col = MediaStore.Downloads.EXTERNAL_CONTENT_URI
+            contentResolver.query(
+                col,
+                arrayOf(MediaStore.Downloads._ID, MediaStore.Downloads.DISPLAY_NAME),
+                "${MediaStore.Downloads.DISPLAY_NAME} LIKE ?",
+                arrayOf("$prefix%"),
+                "${MediaStore.Downloads.DATE_ADDED} DESC"
+            )?.use { c ->
+                while (c.moveToNext()) {
+                    val uri = android.content.ContentUris.withAppendedId(col, c.getLong(0))
+                    out.add(mapOf("name" to c.getString(1), "uri" to uri.toString()))
+                }
+            }
+        } catch (e: Exception) {
+        }
+        return out
     }
 }

@@ -11,4 +11,20 @@ cp android-native/res/xml/data_extraction_rules.xml android/app/src/main/res/xml
 sed -i 's|<application|<application android:dataExtractionRules="@xml/data_extraction_rules"|' $M
 sed -i 's|<application|<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>\n    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>\n    <application|' $M
 sed -i 's|</application>|    <receiver android:name=".BootReceiver" android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.BOOT_COMPLETED"/>\n                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>\n                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>\n            </intent-filter>\n        </receiver>\n    </application>|' $M
+# "Open with LiveTV Player" for backup files in file managers
+python3 - "$M" <<'PYEOF'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+f = '''
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:scheme="content" android:mimeType="application/json"/>
+                <data android:scheme="file" android:mimeType="application/json"/>
+            </intent-filter>'''
+i = s.index('</intent-filter>') + len('</intent-filter>')
+s = s[:i] + f + s[i:]
+open(p, 'w').write(s)
+PYEOF
 grep -c BootReceiver $M

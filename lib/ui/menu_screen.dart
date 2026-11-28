@@ -6,6 +6,7 @@ import '../app_state.dart';
 import '../autostart.dart';
 import '../diag.dart';
 import '../models.dart';
+import 'backup_screen.dart';
 import 'channel_check_screen.dart';
 import 'common.dart';
 import 'epg_settings_screen.dart';
@@ -135,6 +136,10 @@ class MenuScreen extends StatelessWidget {
                 tr('Find channels that don\'t work'),
                 () => Navigator.of(context).push(MaterialPageRoute<void>(
                     builder: (_) => const ChannelCheckScreen()))),
+          item(Icons.settings_backup_restore_rounded, tr('Backup and restore'),
+              tr('Save or restore profiles, favourites and settings'),
+              () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => const BackupScreen()))),
           if (Diag.enabled)
             item(Icons.receipt_long_outlined, tr('Share player log'),
                 Platform.isWindows

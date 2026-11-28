@@ -97,6 +97,28 @@ const _da = <String, String>{
   'No channels match "{q}"': 'Ingen kanaler matcher "{q}"',
   'Search channels by name': 'Søg kanaler efter navn',
 
+  'Backup and restore': 'Backup og gendannelse',
+  'Save or restore profiles, favourites and settings': 'Gem eller hent profiler, favoritter og indstillinger',
+  'Make a backup': 'Lav en backup',
+  'Restore a backup': 'Gendan en backup',
+  'Include usernames and passwords': 'Inkluder brugernavne og adgangskoder',
+  'Keep the file private: it contains your logins.': 'Hold filen privat: den indeholder dine logins.',
+  'Without logins you enter them again after restoring.': 'Uden logins skal du skrive dem igen efter gendannelse.',
+  'Backup saved to {p}': 'Backup gemt i {p}',
+  'Could not save the backup': 'Backuppen kunne ikke gemmes',
+  'Restored {n} profiles': '{n} profiler gendannet',
+  'This file is not a LiveTV Player backup': 'Filen er ikke en LiveTV Player-backup',
+  'Choose a backup': 'Vælg en backup',
+  'Choose a file…': 'Vælg en fil…',
+  'No backups found': 'Ingen backups fundet',
+  'Put the backup file in the Download folder, or open it with LiveTV Player from a file manager.':
+      'Læg backupfilen i Download-mappen, eller åbn den med LiveTV Player fra en filhåndtering.',
+  'Put the backup file in your Downloads folder.': 'Læg backupfilen i din Overførsler-mappe.',
+  'Restore this backup?': 'Gendan denne backup?',
+  'Profiles and settings from the file replace the ones with the same name here.':
+      'Profiler og indstillinger fra filen erstatter dem med samme navn her.',
+  'Restore': 'Gendan',
+
   // ---------------------------------------------------------------- player
   'Could not play this channel': 'Kanalen kunne ikke afspilles',
   "This channel isn't responding right now. Try again in a moment, or pick another channel.":

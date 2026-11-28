@@ -156,6 +156,58 @@ class AppState extends ChangeNotifier {
     });
   }
 
+  // ---------------------------------------------------------------- backup
+
+  /// Everything needed to set the app up again: settings, profiles with
+  /// favourites, favourite categories and recents, and (if [logins]) the
+  /// usernames, passwords and playlist links.
+  Map<String, dynamic> backupJson({required bool logins}) => {
+        'app': 'LiveTV Player',
+        'backup': 1,
+        'created': DateTime.now().toIso8601String(),
+        'settings': settings.toJson(),
+        'active': activeId,
+        'profiles': [for (final p in profiles) p.toJson(includeSecrets: logins)],
+      };
+
+  /// Restores a backup made by [backupJson]. Profiles with the same id are
+  /// replaced, others added. Returns the number of profiles restored.
+  Future<int> restoreBackup(Map<String, dynamic> j) async {
+    if (j['app'] != 'LiveTV Player' || j['profiles'] is! List) {
+      throw const FormatException('Not a LiveTV Player backup');
+    }
+    final sj = j['settings'];
+    if (sj is Map) {
+      settings = Settings.fromJson(sj.cast<String, dynamic>());
+      L10n.setting = settings.language;
+    }
+    var n = 0;
+    for (final raw in j['profiles'] as List) {
+      final p = Profile.fromJson((raw as Map).cast<String, dynamic>());
+      final i = profiles.indexWhere((x) => x.id == p.id);
+      if (i >= 0) {
+        // keep this device's login if the backup was made without logins
+        final old = profiles[i];
+        if (p.username.isEmpty && p.password.isEmpty && p.m3uUrl.isEmpty) {
+          p.applySecrets(old.secrets);
+        }
+        profiles[i] = p;
+      } else {
+        profiles.add(p);
+      }
+      n++;
+    }
+    final a = j['active'] as String?;
+    if (a != null && profiles.any((p) => p.id == a)) activeId = a;
+    activeId ??= profiles.isEmpty ? null : profiles.first.id;
+    await save();
+    await _loadActiveCaches();
+    final act = active;
+    if (act != null) refreshChannels(act, silent: true);
+    notifyListeners();
+    return n;
+  }
+
   // -------------------------------------------------------------- scheduler
 
   void _tick() {

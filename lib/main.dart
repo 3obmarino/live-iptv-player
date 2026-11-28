@@ -6,6 +6,8 @@ import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'app_state.dart';
+import 'backup.dart';
+import 'ui/backup_screen.dart';
 import 'diag.dart';
 import 'ui/common.dart';
 import 'ui/live_screen.dart';
@@ -55,15 +57,49 @@ class TvApp extends StatelessWidget {
         builder: kTvBuild
             ? (context, child) => TvKeys(child: child ?? const SizedBox.shrink())
             : null,
+        navigatorKey: appNavigatorKey,
         home: const RootGate(),
       ),
     );
   }
 }
 
+final appNavigatorKey = GlobalKey<NavigatorState>();
+
 /// Shows the profile setup until a profile exists, then the main shell.
-class RootGate extends StatelessWidget {
+/// Also picks up a backup file opened with "Open with LiveTV Player".
+class RootGate extends StatefulWidget {
   const RootGate({super.key});
+  @override
+  State<RootGate> createState() => _RootGateState();
+}
+
+class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkOpenedBackup());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _checkOpenedBackup();
+  }
+
+  Future<void> _checkOpenedBackup() async {
+    final text = await Backup.takeOpenedFile();
+    final ctx = appNavigatorKey.currentState?.overlay?.context;
+    if (text == null || ctx == null || !ctx.mounted) return;
+    await confirmRestore(ctx, text);
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
