@@ -1,6 +1,12 @@
 package dk.livetvplayer.live_tv_player
 
+import android.app.AlertDialog
 import android.content.ContentValues
+import android.text.InputType
+import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
+import android.widget.EditText
+import android.widget.FrameLayout
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
@@ -70,6 +76,15 @@ class MainActivity : FlutterActivity() {
                         val text = call.argument<String>("text") ?: ""
                         result.success(saveToDownloads(name, text))
                     }
+                    // TV text entry in a plain Android dialog: the TV keyboard and
+                    // remote work with it like in any native TV app (Flutter sees
+                    // remote keys before the keyboard, so they never reached it).
+                    "editText" -> editText(
+                        call.argument<String>("label") ?: "",
+                        call.argument<String>("text") ?: "",
+                        call.argument<String>("kind") ?: "text",
+                        result
+                    )
                     else -> result.notImplemented()
                 }
             }
@@ -96,5 +111,49 @@ class MainActivity : FlutterActivity() {
         }
     } catch (e: Exception) {
         null
+    }
+
+    private fun editText(label: String, text: String, kind: String, result: MethodChannel.Result) {
+        var answered = false
+        fun answer(v: String?) {
+            if (!answered) {
+                answered = true
+                result.success(v)
+            }
+        }
+        val input = EditText(this).apply {
+            setText(text)
+            setSelection(text.length)
+            isSingleLine = true
+            imeOptions = EditorInfo.IME_ACTION_DONE or EditorInfo.IME_FLAG_NO_EXTRACT_UI
+            inputType = when (kind) {
+                "password" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+                "url" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+                else -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            }
+        }
+        val pad = (24 * resources.displayMetrics.density).toInt()
+        val box = FrameLayout(this).apply {
+            setPadding(pad, pad / 2, pad, 0)
+            addView(input)
+        }
+        val dlg = AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle(label)
+            .setView(box)
+            .setPositiveButton(android.R.string.ok) { _, _ -> answer(input.text.toString()) }
+            .setNegativeButton(android.R.string.cancel) { _, _ -> answer(null) }
+            .setOnCancelListener { answer(null) }
+            .setOnDismissListener { answer(null) }
+            .create()
+        input.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                answer(input.text.toString())
+                dlg.dismiss()
+                true
+            } else false
+        }
+        dlg.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
+        dlg.show()
+        input.requestFocus()
     }
 }

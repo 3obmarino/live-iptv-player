@@ -422,8 +422,27 @@ class AppTextField extends StatelessWidget {
     );
   }
 
+  static const _native = MethodChannel('livetv/boot');
+
   Future<void> _edit(BuildContext context) async {
-    final value = await showDialog<String>(
+    // Android's own input dialog: the TV keyboard and remote work there like
+    // in other TV apps. The Flutter editor below is only a fallback.
+    String? value;
+    var nativeOk = false;
+    try {
+      value = await _native.invokeMethod<String>('editText', {
+        'label': decoration.labelText ?? decoration.hintText ?? '',
+        'text': controller.text,
+        'kind': obscureText
+            ? 'password'
+            : keyboardType == TextInputType.url
+                ? 'url'
+                : 'text',
+      });
+      nativeOk = true;
+    } catch (_) {}
+    if (!nativeOk && context.mounted) {
+      value = await showDialog<String>(
       context: context,
       builder: (_) => _TvEditDialog(
         label: decoration.labelText ?? decoration.hintText ?? '',
@@ -433,6 +452,7 @@ class AppTextField extends StatelessWidget {
         obscureText: obscureText,
       ),
     );
+    }
     if (value == null || !context.mounted) return;
     if (value != controller.text) {
       controller.text = value;
