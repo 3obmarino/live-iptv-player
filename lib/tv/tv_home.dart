@@ -49,6 +49,7 @@ class _TvHomeState extends State<TvHome> {
   List<Channel> _list = const [];
   int _guideStart = 0;
   String? _profileId;
+  bool _openFirstCategory = false; // after switching profile
 
   Timer? _infoTimer;
   String? _toast;
@@ -85,10 +86,23 @@ class _TvHomeState extends State<TvHome> {
     if (!mounted) return;
     final s = AppState.I;
     if (_profileId != s.activeId) {
+      // Switched profile (not the first start): open its first category.
+      _openFirstCategory = _profileId != null;
       _profileId = s.activeId;
       _cat = 1;
       _catSel = 1;
       _core.channel = null;
+    }
+    if (_openFirstCategory) {
+      final first = s.firstCategoryId();
+      if (first != null) {
+        final i = _cats().indexWhere((c) => c.id == first);
+        if (i >= 0) {
+          _cat = i;
+          _catSel = i;
+        }
+        _openFirstCategory = false;
+      }
     }
     _rebuildList();
     if (_core.channel == null && s.channels.isNotEmpty) {

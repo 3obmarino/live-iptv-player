@@ -23,6 +23,7 @@ class _LiveScreenState extends State<LiveScreen> {
   String _query = '';
   String? _focusId; // channel to scroll to after "Go to category"
   String? _profileId;
+  bool _openFirstCategory = false; // after switching profile
   final _search = TextEditingController();
   Timer? _timer;
 
@@ -80,6 +81,7 @@ class _LiveScreenState extends State<LiveScreen> {
     setState(() {
       _categoryId = picked == kAll ? null : picked;
       _focusId = null;
+      _openFirstCategory = false;
     });
   }
 
@@ -90,8 +92,20 @@ class _LiveScreenState extends State<LiveScreen> {
       builder: (context, _) {
         final s = AppState.I;
         if (_profileId != s.activeId) {
+          // Switched profile (not the first build): open its first category.
+          _openFirstCategory = _profileId != null;
           _profileId = s.activeId;
           _categoryId = null;
+          _focusId = null;
+          _query = '';
+          _search.clear();
+        }
+        if (_openFirstCategory) {
+          final first = s.firstCategoryId();
+          if (first != null) {
+            _categoryId = first;
+            _openFirstCategory = false;
+          }
         }
         final list = _filtered(s);
         return Padding(

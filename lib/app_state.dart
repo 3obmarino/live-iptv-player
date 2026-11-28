@@ -352,6 +352,23 @@ class AppState extends ChangeNotifier {
     await _loadActiveCaches();
     await save();
     _tick();
+    // Show the cached list at once, then fetch a fresh one in the background.
+    refreshChannels(p, silent: true);
+  }
+
+  /// The category a profile opens on: the first favourite category, else
+  /// the first category that has channels. Null when nothing is loaded yet.
+  String? firstCategoryId() {
+    final counts = <String, int>{};
+    for (final c in channels) {
+      counts[c.categoryId] = (counts[c.categoryId] ?? 0) + 1;
+    }
+    final favCats = active?.favoriteCategories ?? const <String>{};
+    final withChannels = categories.where((c) => (counts[c.id] ?? 0) > 0).toList();
+    for (final c in withChannels) {
+      if (favCats.contains(c.id)) return c.id;
+    }
+    return withChannels.isEmpty ? null : withChannels.first.id;
   }
 
   // ------------------------------------------------------ favourites/recents

@@ -76,9 +76,12 @@ class RootGate extends StatelessWidget {
     return ListenableBuilder(
       listenable: AppState.I,
       builder: (_, __) =>
-          AppState.I.active == null
-              ? const ProfilesScreen()
-              : (kTvBuild ? const TvHome() : const HomeShell()),
+          AppState.I.active != null
+              ? (kTvBuild ? const TvHome() : const HomeShell())
+              // No profiles yet: go straight to the form, no empty page first.
+              : AppState.I.profiles.isEmpty
+                  ? const EditProfileScreen()
+                  : const ProfilesScreen(),
     );
   }
 }

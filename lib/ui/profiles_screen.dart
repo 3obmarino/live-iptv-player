@@ -237,7 +237,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       p.epgUpdated = null; // credentials may have changed: fetch a fresh guide
       s.refreshEpg();
     }
-    Navigator.of(context).pop();
+    // As the very first screen there is nothing to go back to: the app
+    // switches to the channels by itself once the profile is active.
+    if (Navigator.of(context).canPop()) Navigator.of(context).pop();
   }
 
   @override
