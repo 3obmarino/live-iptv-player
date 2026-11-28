@@ -76,7 +76,7 @@ shot E1_resumed_a; sleep 3; shot E2_resumed_b
 # G: Search from the sidebar: type in the Android text field, Enter
 fresh
 key KEYCODE_BACK 3; key KEYCODE_BACK 3          # guide, then sidebar
-key KEYCODE_DPAD_UP 1; key KEYCODE_DPAD_UP 1; key KEYCODE_DPAD_UP 2   # to "Søg/Search"
+key KEYCODE_DPAD_UP 1; key KEYCODE_DPAD_UP 2   # All channels -> Favourites -> Search
 shot G1_sidebar_search
 key KEYCODE_DPAD_CENTER 4                       # opens the text field
 shot G2_search_field
