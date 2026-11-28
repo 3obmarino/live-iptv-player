@@ -4,10 +4,43 @@ import '../app_state.dart';
 import '../models.dart';
 import 'common.dart';
 
-class ChannelGrid extends StatelessWidget {
-  const ChannelGrid({super.key, required this.channels, required this.onPlay});
+class ChannelGrid extends StatefulWidget {
+  const ChannelGrid(
+      {super.key,
+      required this.channels,
+      required this.onPlay,
+      this.onGoToCategory,
+      this.focusId});
   final List<Channel> channels;
   final void Function(Channel) onPlay;
+
+  /// Search results: menu entry "Go to category".
+  final void Function(Channel)? onGoToCategory;
+
+  /// Scroll to and mark this channel (after "Go to category").
+  final String? focusId;
+
+  static const _maxExtent = 540.0, _rowH = 92.0, _spacing = 4.0, _pad = 8.0;
+
+  @override
+  State<ChannelGrid> createState() => _ChannelGridState();
+}
+
+class _ChannelGridState extends State<ChannelGrid> {
+  static const _maxExtent = ChannelGrid._maxExtent,
+      _rowH = ChannelGrid._rowH,
+      _spacing = ChannelGrid._spacing,
+      _pad = ChannelGrid._pad;
+
+  // One controller per "focus" so normal rebuilds never move the list.
+  ScrollController? _ctrl;
+  String? _ctrlFor;
+
+  @override
+  void dispose() {
+    _ctrl?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,33 +53,58 @@ class ChannelGrid extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant),
       ),
       clipBehavior: Clip.antiAlias,
-      child: GridView.builder(
-        padding: const EdgeInsets.all(8),
+      child: LayoutBuilder(builder: (context, box) {
+        // Same column count as the grid below, to scroll to [focusId].
+        final cols = ((box.maxWidth - 2 * _pad) / (_maxExtent + _spacing)).ceil().clamp(1, 99);
+        if (_ctrl == null || _ctrlFor != widget.focusId) {
+          final idx = widget.focusId == null ? -1 : widget.channels.indexWhere((c) => c.id == widget.focusId);
+          final rowsAbove = idx <= 0 ? 0 : (idx ~/ cols) - 1; // one row of context above
+          final offset = rowsAbove <= 0 ? 0.0 : rowsAbove * (_rowH + 2);
+          final old = _ctrl;
+          if (old != null) WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
+          _ctrl = ScrollController(initialScrollOffset: offset);
+          _ctrlFor = widget.focusId;
+        }
+        return GridView.builder(
+        key: ValueKey(widget.focusId),
+        controller: _ctrl,
+        padding: const EdgeInsets.all(_pad),
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
           // Wider tiles (5 instead of 6 columns on a big screen) and room for
           // a time line + two lines of title, so event names aren't cut off.
-          maxCrossAxisExtent: 540,
-          mainAxisExtent: 92,
-          crossAxisSpacing: 4,
+          maxCrossAxisExtent: _maxExtent,
+          mainAxisExtent: _rowH,
+          crossAxisSpacing: _spacing,
           mainAxisSpacing: 2,
         ),
-        itemCount: channels.length,
+        itemCount: widget.channels.length,
         itemBuilder: (ctx, i) => ChannelTile(
-          channel: channels[i],
+          channel: widget.channels[i],
           now: now,
-          onTap: () => onPlay(channels[i]),
+          onTap: () => widget.onPlay(widget.channels[i]),
+          onGoToCategory:
+              widget.onGoToCategory == null ? null : () => widget.onGoToCategory!(widget.channels[i]),
+          marked: widget.channels[i].id == widget.focusId,
         ),
-      ),
+      );
+      }),
     );
   }
 }
 
 class ChannelTile extends StatelessWidget {
   const ChannelTile(
-      {super.key, required this.channel, required this.now, required this.onTap});
+      {super.key,
+      required this.channel,
+      required this.now,
+      required this.onTap,
+      this.onGoToCategory,
+      this.marked = false});
   final Channel channel;
   final int now;
   final VoidCallback onTap;
+  final VoidCallback? onGoToCategory;
+  final bool marked;
 
   @override
   Widget build(BuildContext context) {
@@ -55,8 +113,15 @@ class ChannelTile extends StatelessWidget {
     final cur = currentProgramme(channel, now);
     final fav = s.isFavorite(channel);
     final split = splitEventName(channel.name);
+    String? catName;
+    if (onGoToCategory != null) {
+      for (final c in s.categories) {
+        if (c.id == channel.categoryId) catName = c.name;
+      }
+    }
     return Material(
-      color: Colors.transparent,
+      color: marked ? accentOf(context).withOpacity(0.14) : Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
@@ -123,6 +188,8 @@ class ChannelTile extends StatelessWidget {
                     showChannelGuide(context, channel, onWatch: onTap);
                   } else if (v == 'fav') {
                     s.toggleFavorite(channel);
+                  } else if (v == 'cat') {
+                    onGoToCategory?.call();
                   }
                 },
                 itemBuilder: (_) => [
@@ -130,6 +197,8 @@ class ChannelTile extends StatelessWidget {
                   PopupMenuItem(
                       value: 'fav',
                       child: Text(fav ? 'Remove from favourites' : 'Add to favourites')),
+                  if (catName != null)
+                    PopupMenuItem(value: 'cat', child: Text('Go to category: $catName')),
                 ],
               ),
             ],

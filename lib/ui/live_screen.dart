@@ -21,6 +21,7 @@ class _LiveScreenState extends State<LiveScreen> {
   /// null = All, kFavourites = favourite channels, otherwise a category id.
   String? _categoryId;
   String _query = '';
+  String? _focusId; // channel to scroll to after "Go to category"
   String? _profileId;
   final _search = TextEditingController();
   Timer? _timer;
@@ -76,7 +77,10 @@ class _LiveScreenState extends State<LiveScreen> {
       builder: (_) => CategoriesScreen(selected: _categoryId),
     ));
     if (picked == null) return;
-    setState(() => _categoryId = picked == kAll ? null : picked);
+    setState(() {
+      _categoryId = picked == kAll ? null : picked;
+      _focusId = null;
+    });
   }
 
   @override
@@ -156,7 +160,10 @@ class _LiveScreenState extends State<LiveScreen> {
 
     final search = TextField(
       controller: _search,
-      onChanged: (v) => setState(() => _query = v),
+      onChanged: (v) => setState(() {
+        _query = v;
+        _focusId = null;
+      }),
       decoration: InputDecoration(
         hintText: 'Search channels',
         prefixIcon: const Icon(Icons.search, size: 20),
@@ -263,7 +270,21 @@ class _LiveScreenState extends State<LiveScreen> {
     if (s.settings.epgView) {
       return EpgGrid(channels: list, onPlay: (c) => _play(list, c));
     }
-    return ChannelGrid(channels: list, onPlay: (c) => _play(list, c));
+    return ChannelGrid(
+      channels: list,
+      onPlay: (c) => _play(list, c),
+      focusId: _query.isEmpty ? _focusId : null,
+      onGoToCategory: _query.trim().isEmpty
+          ? null
+          : (c) {
+              _search.clear();
+              setState(() {
+                _query = '';
+                _categoryId = c.categoryId.isEmpty ? null : c.categoryId;
+                _focusId = c.id;
+              });
+            },
+    );
   }
 
   void _showRecents(BuildContext context, AppState s) {
