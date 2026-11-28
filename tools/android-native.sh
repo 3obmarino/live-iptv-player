@@ -27,4 +27,22 @@ i = s.index('</intent-filter>') + len('</intent-filter>')
 s = s[:i] + f + s[i:]
 open(p, 'w').write(s)
 PYEOF
+# Android 11+ only lets the app see other apps it declares here: the voice
+# recognizer, share targets and the file picker. Without this, voice search
+# is reported as unavailable on Google TV and phones.
+python3 - "$M" <<'PYEOF'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+q = '''
+        <intent><action android:name="android.speech.action.RECOGNIZE_SPEECH"/></intent>
+        <intent><action android:name="android.speech.RecognitionService"/></intent>
+        <intent><action android:name="android.intent.action.SEND"/><data android:mimeType="text/plain"/></intent>
+        <intent><action android:name="android.intent.action.OPEN_DOCUMENT"/><data android:mimeType="*/*"/></intent>'''
+if '<queries>' in s:
+    s = s.replace('<queries>', '<queries>' + q, 1)
+else:
+    s = s.replace('</manifest>', '    <queries>' + q + '\n    </queries>\n</manifest>', 1)
+open(p, 'w').write(s)
+PYEOF
 grep -c BootReceiver $M
