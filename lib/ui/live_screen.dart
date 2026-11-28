@@ -11,6 +11,7 @@ import 'epg_grid.dart';
 import 'menu_screen.dart';
 import 'player_screen.dart';
 import '../l10n.dart';
+import '../voice.dart';
 
 class LiveScreen extends StatefulWidget {
   const LiveScreen({super.key});
@@ -28,9 +29,24 @@ class _LiveScreenState extends State<LiveScreen> {
   final _search = TextEditingController();
   Timer? _timer;
 
+  bool _voice = false; // Android with a speech recognizer
+
+  Future<void> _voiceSearch() async {
+    final text = await Voice.listen();
+    if (text == null || !mounted) return;
+    _search.text = text;
+    setState(() {
+      _query = text;
+      _focusId = null;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    Voice.available().then((v) {
+      if (mounted && v) setState(() => _voice = true);
+    });
     // Keeps "now playing" lines and progress bars current.
     _timer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) setState(() {});
@@ -53,7 +69,7 @@ class _LiveScreenState extends State<LiveScreen> {
       } else if (_categoryId != null && c.categoryId != _categoryId) {
         return false;
       }
-      return q.isEmpty || c.name.toLowerCase().contains(q);
+      return q.isEmpty || matchesSearch(c.name, q);
     }).toList();
   }
 
@@ -192,7 +208,13 @@ class _LiveScreenState extends State<LiveScreen> {
             borderRadius: BorderRadius.circular(24),
             borderSide: BorderSide(color: accentOf(context), width: 1.5)),
         suffixIcon: _query.isEmpty
-            ? null
+            ? (_voice
+                ? IconButton(
+                    tooltip: tr('Voice search'),
+                    icon: const Icon(Icons.mic_none_rounded, size: 20),
+                    onPressed: _voiceSearch,
+                  )
+                : null)
             : IconButton(
                 icon: const Icon(Icons.close, size: 18),
                 onPressed: () {

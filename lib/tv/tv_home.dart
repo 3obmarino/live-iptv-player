@@ -13,6 +13,7 @@ import '../ui/menu_screen.dart';
 import '../updater.dart';
 import 'tv_guide.dart';
 import '../l10n.dart';
+import '../voice.dart';
 
 enum _Mode { play, info, guide, sidebar }
 
@@ -43,8 +44,11 @@ class _TvHomeState extends State<TvHome> {
   final _guideKey = GlobalKey<TvGuideState>();
 
   _Mode _mode = _Mode.play;
-  int _cat = 1; // index into _cats(); 1 = All
-  int _catSel = 1;
+  // index into _cats(): 0 = Search, 1 = Favourites, 2 = All, then categories
+  static const _allIdx = 2;
+  int _cat = _allIdx;
+  int _catSel = _allIdx;
+  String _searchQuery = '';
   bool _railFocus = false;
   int _tile = 0;
   List<Channel> _list = const [];
@@ -90,8 +94,9 @@ class _TvHomeState extends State<TvHome> {
       // Switched profile (not the first start): open its first category.
       _openFirstCategory = _profileId != null;
       _profileId = s.activeId;
-      _cat = 1;
-      _catSel = 1;
+      _cat = _allIdx;
+      _catSel = _allIdx;
+      _searchQuery = '';
       _core.channel = null;
     }
     if (_openFirstCategory) {
@@ -124,6 +129,8 @@ class _TvHomeState extends State<TvHome> {
       ..sort((a, b) =>
           (favCats.contains(a.id) ? 0 : 1).compareTo(favCats.contains(b.id) ? 0 : 1));
     return [
+      _Cat('__search__',
+          _searchQuery.isEmpty ? tr('Search (speak or type)') : tr('Search: {q}', {'q': _searchQuery})),
       _Cat('__fav__', tr('Favourites')),
       _Cat('__all__', tr('All channels')),
       for (final c in cats) _Cat(c.id, c.name),
@@ -133,10 +140,13 @@ class _TvHomeState extends State<TvHome> {
   void _rebuildList() {
     final s = AppState.I;
     final cats = _cats();
-    if (_cat >= cats.length) _cat = 1;
+    if (_cat >= cats.length) _cat = _allIdx;
     final id = cats[_cat].id;
     final fav = s.active?.favorites ?? const <String>{};
     _list = switch (id) {
+      '__search__' => _searchQuery.isEmpty
+          ? const <Channel>[]
+          : s.channels.where((c) => matchesSearch(c.name, _searchQuery)).toList(),
       '__fav__' => s.channels.where((c) => fav.contains(c.id)).toList(),
       '__all__' => s.channels,
       _ => s.channels.where((c) => c.categoryId == id).toList(),
@@ -312,6 +322,11 @@ class _TvHomeState extends State<TvHome> {
     }
     if (e is KeyUpEvent) return KeyEventResult.ignored;
 
+    // The remote's search key (where it reaches apps)
+    if (k == LogicalKeyboardKey.browserSearch || k == LogicalKeyboardKey.find) {
+      if (e is KeyDownEvent) _search();
+      return KeyEventResult.handled;
+    }
     if (k == LogicalKeyboardKey.goBack || k == LogicalKeyboardKey.escape) {
       if (e is KeyDownEvent) _back();
       return KeyEventResult.handled;
@@ -390,7 +405,31 @@ class _TvHomeState extends State<TvHome> {
     }
   }
 
+  /// Search: speak (Google voice) or, without a recognizer, type in the
+  /// Android input dialog. Results show as a list in the guide.
+  Future<void> _search() async {
+    String? text;
+    if (await Voice.available()) {
+      text = await Voice.listen();
+    } else {
+      text = await Voice.type(tr('Search channels by name'), _searchQuery);
+    }
+    text = text?.trim();
+    if (!mounted || text == null || text.isEmpty) return;
+    setState(() {
+      _searchQuery = text!;
+      _cat = 0;
+      _catSel = 0;
+      _rebuildList();
+    });
+    _openGuide();
+  }
+
   void _chooseCategory() {
+    if (_catSel == 0) {
+      _search();
+      return;
+    }
     setState(() {
       _cat = _catSel;
       _rebuildList();
@@ -411,7 +450,7 @@ class _TvHomeState extends State<TvHome> {
         } else if (_tile < tiles.length) {
           final c = tiles[_tile]!;
           if (_list.indexWhere((x) => x.id == c.id) < 0) {
-            _cat = 1; // recent channel from another category: show All
+            _cat = _allIdx; // recent channel from another category: show All
             _rebuildList();
           }
           _play(c, showInfo: false);
@@ -641,7 +680,7 @@ class _TvHomeState extends State<TvHome> {
                 if (_railFocus)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 0, 12),
-                    child: Text(upd ? 'Settings  ·  update available' : tr('Settings'),
+                    child: Text(upd ? tr('Settings  ·  update available') : tr('Settings'),
                         style: const TextStyle(color: kAccent, fontSize: 15)),
                   ),
                 Expanded(

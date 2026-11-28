@@ -89,6 +89,14 @@ const _da = <String, String>{
   'Settings  ·  update available': 'Indstillinger  ·  opdatering klar',
   '{n} min': '{n} min',
 
+  'Say a channel name': 'Sig et kanalnavn',
+  'Search': 'Søg',
+  'Search: {q}': 'Søg: {q}',
+  'Search (speak or type)': 'Søg (tal eller skriv)',
+  'Voice search': 'Talesøgning',
+  'No channels match "{q}"': 'Ingen kanaler matcher "{q}"',
+  'Search channels by name': 'Søg kanaler efter navn',
+
   // ---------------------------------------------------------------- player
   'Could not play this channel': 'Kanalen kunne ikke afspilles',
   "This channel isn't responding right now. Try again in a moment, or pick another channel.":

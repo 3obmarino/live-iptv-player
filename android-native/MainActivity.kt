@@ -11,6 +11,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
+import android.speech.RecognizerIntent
 import java.io.File
 import android.os.Build
 import android.provider.Settings
@@ -19,6 +20,27 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+    private var voiceResult: MethodChannel.Result? = null
+    private val voiceRequest = 4711
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == voiceRequest) {
+            val text = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+            voiceResult?.success(if (resultCode == RESULT_OK) text else null)
+            voiceResult = null
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
+    private fun voiceIntent(language: String?, prompt: String?) =
+        Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            if (!language.isNullOrEmpty()) putExtra(RecognizerIntent.EXTRA_LANGUAGE, language)
+            if (!prompt.isNullOrEmpty()) putExtra(RecognizerIntent.EXTRA_PROMPT, prompt)
+        }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "livetv/boot")
@@ -85,6 +107,27 @@ class MainActivity : FlutterActivity() {
                         call.argument<String>("kind") ?: "text",
                         result
                     )
+                    // Voice search with the device's speech recognizer (Google on
+                    // phones and Google TV). Returns the text, or null.
+                    "voiceAvailable" -> result.success(
+                        voiceIntent(null, null).resolveActivity(packageManager) != null
+                    )
+                    "voiceSearch" -> {
+                        val intent = voiceIntent(call.argument<String>("language"), call.argument<String>("prompt"))
+                        if (intent.resolveActivity(packageManager) == null) {
+                            result.success(null)
+                        } else {
+                            voiceResult?.success(null)
+                            voiceResult = result
+                            try {
+                                @Suppress("DEPRECATION")
+                                startActivityForResult(intent, voiceRequest)
+                            } catch (e: Exception) {
+                                voiceResult = null
+                                result.success(null)
+                            }
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }
