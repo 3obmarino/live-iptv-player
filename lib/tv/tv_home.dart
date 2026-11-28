@@ -14,6 +14,7 @@ import '../updater.dart';
 import 'tv_guide.dart';
 import '../l10n.dart';
 import '../voice.dart';
+import '../reminders.dart';
 
 enum _Mode { play, info, guide, sidebar }
 
@@ -74,6 +75,8 @@ class _TvHomeState extends State<TvHome> {
     super.initState();
     _core.addListener(_refresh);
     AppState.I.addListener(_onState);
+    AppState.I.playRequest.addListener(_onPlayRequest);
+    Reminders.I.addListener(_refresh);
     Updater.I.addListener(_refresh);
     _clock = Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
     final st = _core.player.stream;
@@ -257,6 +260,19 @@ class _TvHomeState extends State<TvHome> {
       case _Mode.sidebar:
         setState(() => _mode = _Mode.play);
     }
+  }
+
+  void _onPlayRequest() {
+    final c = AppState.I.playRequest.value;
+    if (c == null || !mounted) return;
+    AppState.I.playRequest.value = null;
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    if (_list.indexWhere((x) => x.id == c.id) < 0) {
+      _cat = _allIdx;
+      _rebuildList();
+    }
+    setState(() => _mode = _Mode.play);
+    _play(c);
   }
 
   void _showToast(String msg) {
@@ -459,6 +475,18 @@ class _TvHomeState extends State<TvHome> {
       case _Mode.guide:
         final c = _guideKey.currentState?.selected;
         if (c == null) return;
+        // OK on a programme that hasn't started: remind me (or cancel).
+        final p = _guideKey.currentState?.selectedProgramme;
+        if (p != null && p.start > DateTime.now().millisecondsSinceEpoch) {
+          Reminders.I.toggle(c, p).then((added) {
+            if (mounted) {
+              _showToast(added
+                  ? tr('Reminder set: {t} at {h}', {'t': p.title, 'h': fmtMs(p.start)})
+                  : tr('Reminder removed'));
+            }
+          });
+          return;
+        }
         if (c.id == _core.channel?.id) {
           setState(() => _mode = _Mode.play); // 2nd OK: fullscreen
           _showInfo(tiles: false);
@@ -496,6 +524,8 @@ class _TvHomeState extends State<TvHome> {
   void dispose() {
     _core.removeListener(_refresh);
     AppState.I.removeListener(_onState);
+    AppState.I.playRequest.removeListener(_onPlayRequest);
+    Reminders.I.removeListener(_refresh);
     Updater.I.removeListener(_refresh);
     _infoTimer?.cancel();
     _toastTimer?.cancel();

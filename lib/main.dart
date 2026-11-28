@@ -15,6 +15,7 @@ import 'ui/profiles_screen.dart';
 import 'tv/tv_home.dart';
 import 'updater.dart';
 import 'l10n.dart';
+import 'reminders.dart';
 
 const appTitle = 'LiveTV Player';
 
@@ -35,6 +36,7 @@ Future<void> main() async {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
   await AppState.I.init();
+  await Reminders.I.init();
   Updater.I.start();
   runApp(const TvApp());
 }
@@ -80,11 +82,41 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkOpenedBackup());
+    Reminders.I.due.addListener(_onReminder);
+  }
+
+  /// A reminded programme starts: pop-up with "Watch now".
+  Future<void> _onReminder() async {
+    final r = Reminders.I.due.value;
+    final ctx = appNavigatorKey.currentState?.overlay?.context;
+    if (r == null || ctx == null || !ctx.mounted) return;
+    Reminders.I.due.value = null;
+    final c = Reminders.I.channelFor(r);
+    final watch = await showDialog<bool>(
+      context: ctx,
+      builder: (dctx) => AlertDialog(
+        icon: const Icon(Icons.notifications_active_rounded, size: 36),
+        title: Text(r.title.isEmpty ? r.channelName : r.title),
+        content: Text(tr('Starts now on {c}', {'c': r.channelName})),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dctx, false), child: Text(tr('Close'))),
+          if (c != null)
+            FilledButton.icon(
+              autofocus: true,
+              onPressed: () => Navigator.pop(dctx, true),
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: Text(tr('Watch now')),
+            ),
+        ],
+      ),
+    );
+    if (watch == true && c != null) AppState.I.playRequest.value = c;
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    Reminders.I.due.removeListener(_onReminder);
     super.dispose();
   }
 

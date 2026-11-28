@@ -23,6 +23,9 @@ class AppState extends ChangeNotifier {
 
   List<Category> categories = [];
   List<Channel> channels = [];
+
+  /// Ask the visible screen to play a channel (reminder "Watch now").
+  final playRequest = ValueNotifier<Channel?>(null);
   bool loadingChannels = false;
   String? channelsError;
   DateTime? _lastChannelAttempt;

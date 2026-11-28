@@ -119,6 +119,13 @@ const _da = <String, String>{
       'Profiler og indstillinger fra filen erstatter dem med samme navn her.',
   'Restore': 'Gendan',
 
+  'Remind me': 'Påmind mig',
+  'Cancel reminder': 'Fjern påmindelse',
+  'Reminder set: {t} at {h}': 'Påmindelse sat: {t} kl. {h}',
+  'Reminder removed': 'Påmindelse fjernet',
+  'Starts now on {c}': 'Starter nu på {c}',
+  'Watch now': 'Se nu',
+
   // ---------------------------------------------------------------- player
   'Could not play this channel': 'Kanalen kunne ikke afspilles',
   "This channel isn't responding right now. Try again in a moment, or pick another channel.":

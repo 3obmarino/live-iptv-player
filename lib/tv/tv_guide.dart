@@ -7,6 +7,7 @@ import '../app_state.dart';
 import '../models.dart';
 import '../ui/common.dart';
 import '../l10n.dart';
+import '../reminders.dart';
 
 /// Full-screen TV guide (TiviMate style). The live video is drawn by the
 /// parent inside [preview]; this widget paints everything around it:
@@ -55,6 +56,13 @@ class TvGuideState extends State<TvGuide> {
   List<Programme> _progs(int row) => AppState.I.epg.forChannel(widget.channels[row]);
 
   Channel? get selected => widget.channels.isEmpty ? null : widget.channels[_row];
+
+  /// The highlighted programme (null on a channel without guide).
+  Programme? get selectedProgramme {
+    if (widget.channels.isEmpty) return null;
+    final ps = _progs(_row);
+    return (_prog >= 0 && _prog < ps.length) ? ps[_prog] : null;
+  }
 
   @override
   void initState() {
@@ -417,13 +425,23 @@ class TvGuideState extends State<TvGuide> {
                     : const Color(0xFF24262E),
             borderRadius: BorderRadius.circular(4),
           ),
-          child: Text(p.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  color: selected ? kOnAccent : Colors.white,
-                  fontSize: 15,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
+          child: Row(children: [
+            if (Reminders.I.has(widget.channels[r], p))
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Icon(Icons.notifications_active_rounded,
+                    size: 16, color: selected ? kOnAccent : kAccent),
+              ),
+            Expanded(
+              child: Text(p.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: selected ? kOnAccent : Colors.white,
+                      fontSize: 15,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
+            ),
+          ]),
         ),
       ));
     }

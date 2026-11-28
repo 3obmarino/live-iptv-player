@@ -193,6 +193,19 @@ class MainActivity : FlutterActivity() {
                         result.success(openedFile)
                         openedFile = null
                     }
+                    // Programme reminders: an alarm brings the app to the front.
+                    "scheduleReminder" -> {
+                        ReminderReceiver.schedule(
+                            this,
+                            call.argument<Int>("id") ?: 0,
+                            (call.argument<Number>("at") ?: 0).toLong()
+                        )
+                        result.success(null)
+                    }
+                    "cancelReminder" -> {
+                        ReminderReceiver.cancel(this, call.argument<Int>("id") ?: 0)
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }

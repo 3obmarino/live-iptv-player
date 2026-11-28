@@ -41,9 +41,18 @@ class _LiveScreenState extends State<LiveScreen> {
     });
   }
 
+  void _onPlayRequest() {
+    final c = AppState.I.playRequest.value;
+    if (c == null || !mounted) return;
+    AppState.I.playRequest.value = null;
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    _play(_filtered(AppState.I), c);
+  }
+
   @override
   void initState() {
     super.initState();
+    AppState.I.playRequest.addListener(_onPlayRequest);
     Voice.available().then((v) {
       if (mounted && v) setState(() => _voice = true);
     });
@@ -55,6 +64,7 @@ class _LiveScreenState extends State<LiveScreen> {
 
   @override
   void dispose() {
+    AppState.I.playRequest.removeListener(_onPlayRequest);
     _timer?.cancel();
     _search.dispose();
     super.dispose();

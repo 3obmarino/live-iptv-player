@@ -7,6 +7,7 @@ import '../logo_cache.dart';
 import '../models.dart';
 import '../updater.dart' show kTvBuild;
 import '../l10n.dart';
+import '../reminders.dart';
 
 /// "Matrix" green. Bright on dark surfaces; a deeper green on light ones
 /// so text and icons stay readable. Text on top of kAccent uses kOnAccent.
@@ -267,12 +268,31 @@ void showProgrammeDetails(BuildContext context, Channel c, Programme p,
               Text('${c.name}  ·  ${dayLabel(d)}  ${fmtMs(p.start)}–${fmtMs(p.stop)}',
                   style: TextStyle(color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
               const SizedBox(height: 12),
-              Text(p.desc.isEmpty ? 'No description.' : p.desc),
+              Text(p.desc.isEmpty ? tr('No description.') : p.desc),
             ],
           ),
         ),
       ),
       actions: [
+        if (p.start > DateTime.now().millisecondsSinceEpoch)
+          ListenableBuilder(
+            listenable: Reminders.I,
+            builder: (_, __) {
+              final on = Reminders.I.has(c, p);
+              return TextButton.icon(
+                onPressed: () async {
+                  final added = await Reminders.I.toggle(c, p);
+                  if (ctx.mounted) {
+                    toast(ctx, added
+                        ? tr('Reminder set: {t} at {h}', {'t': p.title, 'h': fmtMs(p.start)})
+                        : tr('Reminder removed'));
+                  }
+                },
+                icon: Icon(on ? Icons.notifications_off_outlined : Icons.notifications_active_outlined),
+                label: Text(on ? tr('Cancel reminder') : tr('Remind me')),
+              );
+            },
+          ),
         if (onWatch != null)
           FilledButton.icon(
             onPressed: () {
