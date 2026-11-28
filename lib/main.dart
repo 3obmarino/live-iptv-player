@@ -6,6 +6,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'app_state.dart';
+import 'diag.dart';
 import 'ui/common.dart';
 import 'ui/live_screen.dart';
 import 'ui/profiles_screen.dart';
@@ -49,18 +50,9 @@ class TvApp extends StatelessWidget {
         darkTheme: buildTheme(Brightness.dark),
         themeMode: kTvBuild ? ThemeMode.dark : AppState.I.themeMode,
         scrollBehavior: const AppScrollBehavior(),
-        // Remote control: ▲/▼ must move between fields even when a text field
-        // has focus (by default a text field keeps those keys for itself).
+        // Remote control and text fields, see TvKeys.
         builder: kTvBuild
-            ? (context, child) => Shortcuts(
-                  shortcuts: const <ShortcutActivator, Intent>{
-                    SingleActivator(LogicalKeyboardKey.arrowUp):
-                        DirectionalFocusIntent(TraversalDirection.up, ignoreTextFields: false),
-                    SingleActivator(LogicalKeyboardKey.arrowDown):
-                        DirectionalFocusIntent(TraversalDirection.down, ignoreTextFields: false),
-                  },
-                  child: child ?? const SizedBox.shrink(),
-                )
+            ? (context, child) => TvKeys(child: child ?? const SizedBox.shrink())
             : null,
         home: const RootGate(),
       ),
@@ -156,6 +148,78 @@ class UpdateBar extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Remote control keys around text fields (TV build).
+/// - On-screen keyboard closed: ▲/▼ move between fields (a text field would
+///   otherwise keep those keys), OK opens the keyboard.
+/// - On-screen keyboard open: the arrow keys and OK are left to the keyboard,
+///   so you can move around in it. (Flutter sees keys before the keyboard
+///   does; keys it doesn't handle go on to the keyboard.)
+class TvKeys extends StatefulWidget {
+  const TvKeys({super.key, required this.child});
+  final Widget child;
+  @override
+  State<TvKeys> createState() => _TvKeysState();
+}
+
+class _TvKeysState extends State<TvKeys> {
+  bool _kbOpen = false;
+
+  static bool _inTextField() {
+    final ctx = FocusManager.instance.primaryFocus?.context;
+    if (ctx == null) return false;
+    return ctx.widget is EditableText || ctx.findAncestorWidgetOfExactType<EditableText>() != null;
+  }
+
+  static final _navKeys = {
+    LogicalKeyboardKey.arrowUp,
+    LogicalKeyboardKey.arrowDown,
+    LogicalKeyboardKey.arrowLeft,
+    LogicalKeyboardKey.arrowRight,
+    LogicalKeyboardKey.select,
+    LogicalKeyboardKey.enter,
+    LogicalKeyboardKey.numpadEnter,
+  };
+
+  KeyEventResult _onKey(FocusNode _, KeyEvent e) {
+    if (!_inTextField() || !_navKeys.contains(e.logicalKey)) return KeyEventResult.ignored;
+    if (_kbOpen) {
+      // Not ours: let the on-screen keyboard have it.
+      return KeyEventResult.skipRemainingHandlers;
+    }
+    final ok = e.logicalKey == LogicalKeyboardKey.select ||
+        e.logicalKey == LogicalKeyboardKey.enter ||
+        e.logicalKey == LogicalKeyboardKey.numpadEnter;
+    if (ok) {
+      if (e is KeyDownEvent) SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored; // ▲/▼ go to the Shortcuts below
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final open = MediaQuery.viewInsetsOf(context).bottom > 0;
+    if (open != _kbOpen) Diag.log('[tv] on-screen keyboard ${open ? 'open' : 'closed'}');
+    _kbOpen = open;
+    return Focus(
+      canRequestFocus: false,
+      skipTraversal: true,
+      onKeyEvent: _onKey,
+      child: Shortcuts(
+        shortcuts: open
+            ? const <ShortcutActivator, Intent>{}
+            : const <ShortcutActivator, Intent>{
+                SingleActivator(LogicalKeyboardKey.arrowUp):
+                    DirectionalFocusIntent(TraversalDirection.up, ignoreTextFields: false),
+                SingleActivator(LogicalKeyboardKey.arrowDown):
+                    DirectionalFocusIntent(TraversalDirection.down, ignoreTextFields: false),
+              },
+        child: widget.child,
+      ),
     );
   }
 }
