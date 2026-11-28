@@ -29,6 +29,7 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         takeViewIntent(intent)
+        RefreshJob.ensureScheduled(this)
     }
 
     override fun onNewIntent(intent: Intent) {

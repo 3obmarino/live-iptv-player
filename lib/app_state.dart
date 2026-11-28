@@ -53,7 +53,10 @@ class AppState extends ChangeNotifier {
 
   // ---------------------------------------------------------------- startup
 
-  Future<void> init() async {
+  bool _bg = false; // headless background refresh: no logo downloads
+
+  Future<void> init({bool background = false}) async {
+    _bg = background;
     await Store.init();
     if (kDemo) {
       // Emulator test build: invented channels and guide, no network setup.
@@ -72,7 +75,7 @@ class AppState extends ChangeNotifier {
       channels = demoChannels();
       _epgRaw = demoEpg(channels);
       _applyShift();
-      LogoCache.prefetch(channels.map((c) => c.logo));
+      if (!_bg) LogoCache.prefetch(channels.map((c) => c.logo));
       notifyListeners();
       return;
     }
@@ -104,9 +107,44 @@ class AppState extends ChangeNotifier {
     // frequency and refresh it. It also catches up after sleep/hibernate,
     // because "due" is computed from the saved last-refresh time, not from
     // a one-shot timer.
+    if (background) return;
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(minutes: 1), (_) => _tick());
     Timer(const Duration(seconds: 2), _tick);
+  }
+
+  // ------------------------------------------------- background (Android)
+
+  static const _aliveFile = 'app-alive';
+
+  /// The running app marks itself alive every minute, so the background job
+  /// leaves the work to it.
+  void _markAlive() {
+    try {
+      Store.file(_aliveFile).writeAsStringSync('${DateTime.now().millisecondsSinceEpoch}');
+    } catch (_) {}
+  }
+
+  /// Run by Android's job scheduler (about every hour) while the app is
+  /// closed: refreshes the channel list and the TV guide when they are due,
+  /// exactly as the app itself would.
+  Future<void> backgroundRefresh() async {
+    await init(background: true);
+    try {
+      final f = Store.file(_aliveFile);
+      if (f.existsSync()) {
+        final t = int.tryParse(f.readAsStringSync()) ?? 0;
+        if (DateTime.now().millisecondsSinceEpoch - t < 3 * 60000) return; // app is open
+      }
+    } catch (_) {}
+    final p = active;
+    if (p == null) return;
+    final now = DateTime.now();
+    final channelsStale = channels.isEmpty ||
+        p.channelsUpdated == null ||
+        now.difference(p.channelsUpdated!) > const Duration(hours: 24);
+    if (channelsStale) await refreshChannels(p, silent: true);
+    if (epgDue) await refreshEpg();
   }
 
   Future<void> _loadActiveCaches() async {
@@ -132,7 +170,7 @@ class AppState extends ChangeNotifier {
           Channel.fromJson((c as Map).cast<String, dynamic>())
       ];
     }
-    LogoCache.prefetch(channels.map((c) => c.logo));
+    if (!_bg) LogoCache.prefetch(channels.map((c) => c.logo));
     final cached = await readEpgCache(Store.file('epg_${p.id}.json').path);
     if (cached != null) _epgRaw = cached;
     _applyShift();
@@ -215,6 +253,7 @@ class AppState extends ChangeNotifier {
 
   void _tick() {
     if (kDemo) return;
+    _markAlive();
     final p = active;
     if (p == null) return;
     final now = DateTime.now();
@@ -295,7 +334,7 @@ class AppState extends ChangeNotifier {
       if (p.id == activeId) {
         categories = r.categories;
         channels = r.channels;
-        LogoCache.prefetch(channels.map((c) => c.logo));
+        if (!_bg) LogoCache.prefetch(channels.map((c) => c.logo));
         // Channel list changed: rebuild the EPG lookup memo.
         _applyShift();
       }

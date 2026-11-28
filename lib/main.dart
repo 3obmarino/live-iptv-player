@@ -285,3 +285,17 @@ class _TvKeysState extends State<TvKeys> {
     );
   }
 }
+
+/// Android background refresh: started headless by the native job service
+/// (RefreshJob) about every hour while the app is closed.
+@pragma('vm:entry-point')
+Future<void> backgroundMain() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  const ch = MethodChannel('livetv/background');
+  try {
+    await AppState.I.backgroundRefresh().timeout(const Duration(minutes: 8));
+  } catch (_) {}
+  try {
+    await ch.invokeMethod<void>('done');
+  } catch (_) {}
+}
