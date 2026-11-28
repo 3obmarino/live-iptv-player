@@ -10,6 +10,7 @@ import 'common.dart';
 import 'epg_grid.dart';
 import 'menu_screen.dart';
 import 'player_screen.dart';
+import '../l10n.dart';
 
 class LiveScreen extends StatefulWidget {
   const LiveScreen({super.key});
@@ -62,7 +63,7 @@ class _LiveScreenState extends State<LiveScreen> {
     for (final c in s.categories) {
       if (c.id == _categoryId) return c.name;
     }
-    return 'All channels';
+    return tr('All channels');
   }
 
   void _play(List<Channel> list, Channel c) {
@@ -139,7 +140,7 @@ class _LiveScreenState extends State<LiveScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(mainAxisSize: MainAxisSize.min, children: [
-              Text('Categories',
+              Text(tr('Categories'),
                   style: (compact ? t.titleLarge : t.headlineSmall)
                       ?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(width: 6),
@@ -179,7 +180,7 @@ class _LiveScreenState extends State<LiveScreen> {
         _focusId = null;
       }),
       decoration: InputDecoration(
-        hintText: 'Search channels',
+        hintText: tr('Search channels'),
         prefixIcon: const Icon(Icons.search, size: 20),
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(24),
@@ -204,12 +205,12 @@ class _LiveScreenState extends State<LiveScreen> {
 
     final buttons = <Widget>[
       IconButton(
-        tooltip: 'Recently watched',
+        tooltip: tr('Recently watched'),
         icon: const Icon(Icons.history),
         onPressed: () => _showRecents(context, s),
       ),
       IconButton(
-        tooltip: s.settings.epgView ? 'Channel grid' : 'TV guide',
+        tooltip: s.settings.epgView ? 'Channel grid' : tr('TV guide'),
         icon: Icon(s.settings.epgView ? Icons.grid_view_rounded : Icons.view_list_rounded),
         onPressed: () => s.updateSettings((x) => x.epgView = !x.epgView),
       ),
@@ -256,7 +257,7 @@ class _LiveScreenState extends State<LiveScreen> {
       }
       return Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(s.channelsError ?? 'No channels loaded yet',
+          Text(s.channelsError ?? tr('No channels loaded yet'),
               textAlign: TextAlign.center,
               style: TextStyle(color: cs.onSurfaceVariant)),
           const SizedBox(height: 16),
@@ -266,7 +267,7 @@ class _LiveScreenState extends State<LiveScreen> {
               if (p != null) s.refreshChannels(p);
             },
             icon: const Icon(Icons.refresh),
-            label: const Text('Load channels'),
+            label: Text(tr('Load channels')),
           ),
         ]),
       );
@@ -275,8 +276,8 @@ class _LiveScreenState extends State<LiveScreen> {
       return Center(
         child: Text(
           _categoryId == kFavourites
-              ? 'No favourite channels yet. Click the star on a channel to add it.'
-              : 'No channels match.',
+              ? tr('No favourite channels yet. Click the star on a channel to add it.')
+              : tr('No channels match.'),
           style: TextStyle(color: cs.onSurfaceVariant),
         ),
       );
@@ -307,12 +308,12 @@ class _LiveScreenState extends State<LiveScreen> {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Recently watched'),
+        title: Text(tr('Recently watched')),
         content: SizedBox(
           width: 440,
           height: 480,
           child: rec.isEmpty
-              ? const Center(child: Text('Nothing watched yet'))
+              ? Center(child: Text(tr('Nothing watched yet')))
               : ListView(children: [
                   for (final c in rec)
                     ListTile(
@@ -327,7 +328,7 @@ class _LiveScreenState extends State<LiveScreen> {
                 ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Close'))),
         ],
       ),
     );

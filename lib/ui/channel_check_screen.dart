@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../app_state.dart';
 import '../models.dart';
 import 'common.dart';
+import '../l10n.dart';
 
 /// PC only: open every channel briefly and list the ones that don't answer.
 /// Runs on this machine with your own connection; nothing leaves the PC.
@@ -53,7 +54,8 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
   bool _finished = false;
   int _done = 0;
   int _total = 0;
-  String _phase = '';
+  String _phase = ''; // English key, translated when shown
+  int _phaseN = 0;
   final List<_Dead> _dead = [];
   DateTime? _started;
 
@@ -73,7 +75,7 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
   Future<void> _start() async {
     final list = _channels();
     if (list.isEmpty) {
-      toast(context, 'No channels to check');
+      toast(context, tr('No channels to check'));
       return;
     }
     setState(() {
@@ -98,7 +100,8 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
     if (!mounted) return;
     if (!_stop && failed.isNotEmpty) {
       setState(() {
-        _phase = 'Double-checking ${failed.length} failed';
+        _phase = 'Double-checking';
+        _phaseN = failed.length;
         _done = 0;
         _total = failed.length;
       });
@@ -184,7 +187,7 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
     final f = File('${dir.path}${Platform.pathSeparator}Dead channels $stamp.txt');
     await f.writeAsString(_report(), encoding: utf8);
     await launchUrl(Uri.file(f.path));
-    if (mounted) toast(context, 'Saved to ${f.path}');
+    if (mounted) toast(context, tr('Saved to {p}', {'p': f.path}));
   }
 
   @override
@@ -198,16 +201,16 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
     final cats = AppState.I.categories;
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Check channels')),
+      appBar: AppBar(title: Text(tr('Check channels'))),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Opens each channel for a moment to see if it answers. Runs on this PC '
-              'with your own connection. Most providers allow only 1–2 streams at a '
-              'time, so keep "At a time" at 1 unless your subscription allows more.',
+              tr('Opens each channel for a moment to see if it answers. Runs on this PC '
+                  'with your own connection. Most providers allow only 1–2 streams at a '
+                  'time, so keep "At a time" at 1 unless your subscription allows more.'),
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -219,21 +222,21 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
                 DropdownMenu<String>(
                   enabled: !_running,
                   initialSelection: _scope,
-                  label: const Text('Channels'),
+                  label: Text(tr('Channels')),
                   width: 320,
                   menuHeight: 400,
                   onSelected: (v) => setState(() => _scope = v ?? _kAll),
                   dropdownMenuEntries: [
                     DropdownMenuEntry(
                         value: _kAll,
-                        label: 'All channels (${AppState.I.channels.length})'),
+                        label: tr('All channels ({n})', {'n': AppState.I.channels.length})),
                     for (final c in cats) DropdownMenuEntry(value: c.id, label: c.name),
                   ],
                 ),
                 DropdownMenu<int>(
                   enabled: !_running,
                   initialSelection: _parallel,
-                  label: const Text('At a time'),
+                  label: Text(tr('At a time')),
                   width: 140,
                   onSelected: (v) => setState(() => _parallel = v ?? 1),
                   dropdownMenuEntries: const [
@@ -252,16 +255,16 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
                   FilledButton.icon(
                     onPressed: _start,
                     icon: const Icon(Icons.play_arrow_rounded),
-                    label: const Text('Start check'),
+                    label: Text(tr('Start check')),
                   ),
               ],
             ),
             const SizedBox(height: 20),
             if (_running || _phase.isNotEmpty) ...[
               Row(children: [
-                Text('$_phase  $_done / $_total', style: theme.textTheme.titleSmall),
+                Text('${_phase == 'Double-checking' ? tr('Double-checking {n} failed', {'n': _phaseN}) : tr(_phase)}  $_done / $_total', style: theme.textTheme.titleSmall),
                 const Spacer(),
-                Text('${_dead.length} not working',
+                Text(tr('{n} not working', {'n': _dead.length}),
                     style: theme.textTheme.titleSmall
                         ?.copyWith(color: _dead.isEmpty ? null : theme.colorScheme.error)),
               ]),
@@ -270,22 +273,22 @@ class _ChannelCheckScreenState extends State<ChannelCheckScreen> {
               const SizedBox(height: 16),
             ],
             if (_finished && _dead.isEmpty)
-              const Text('All checked channels answered.'),
+              Text(tr('All checked channels answered.')),
             if (_dead.isNotEmpty && !_running)
               Row(children: [
                 FilledButton.tonalIcon(
                   onPressed: _save,
                   icon: const Icon(Icons.save_alt_rounded),
-                  label: const Text('Save list'),
+                  label: Text(tr('Save list')),
                 ),
                 const SizedBox(width: 12),
                 TextButton.icon(
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: _report()));
-                    toast(context, 'List copied');
+                    toast(context, tr('List copied'));
                   },
                   icon: const Icon(Icons.copy_rounded),
-                  label: const Text('Copy'),
+                  label: Text(tr('Copy')),
                 ),
               ]),
             const SizedBox(height: 8),

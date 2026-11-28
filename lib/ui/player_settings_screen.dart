@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import 'common.dart';
+import '../l10n.dart';
 
 class PlayerSettingsScreen extends StatefulWidget {
   const PlayerSettingsScreen({super.key});
@@ -23,7 +24,7 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Video player settings')),
+      appBar: AppBar(title: Text(tr('Video player settings'))),
       body: ListenableBuilder(
         listenable: AppState.I,
         builder: (context, _) {
@@ -32,9 +33,9 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             children: [
               const SizedBox(height: 8),
-              const Text('Stream format', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(tr('Stream format'), style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 4),
-              Text('Used for Xtream Codes profiles. Try HLS if a channel stutters.',
+              Text(tr('Used for Xtream Codes profiles. Try HLS if a channel stutters.'),
                   style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
               const SizedBox(height: 12),
               SegmentedButton<String>(
@@ -50,16 +51,16 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
               const Divider(),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Hardware decoding'),
-                subtitle: const Text('Lower CPU use. Turn off if you see a black picture.'),
+                title: Text(tr('Hardware decoding')),
+                subtitle: Text(tr('Lower CPU use. Turn off if you see a black picture.')),
                 value: s.settings.hwdec,
                 onChanged: (v) => s.updateSettings((x) => x.hwdec = v),
               ),
               const Divider(),
               const SizedBox(height: 16),
-              const Text('User agent', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(tr('User agent'), style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 4),
-              Text('Only needed if your provider requires a specific one. Empty = default.',
+              Text(tr('Only needed if your provider requires a specific one. Empty = default.'),
                   style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
               const SizedBox(height: 12),
               AppTextField(controller: _ua),
@@ -69,22 +70,22 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
                 child: FilledButton(
                   onPressed: () async {
                     await s.updateSettings((x) => x.userAgent = _ua.text.trim());
-                    if (context.mounted) toast(context, 'Saved');
+                    if (context.mounted) toast(context, tr('Saved'));
                   },
-                  child: const Text('Save'),
+                  child: Text(tr('Save')),
                 ),
               ),
               const SizedBox(height: 24),
-              Text('Changes apply to the next channel you open.',
+              Text(tr('Changes apply to the next channel you open.'),
                   style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12.5)),
               const SizedBox(height: 24),
-              const Text('Keyboard in the player', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(tr('Keyboard in the player'), style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Text(
-                '↑ / ↓  or  PgUp / PgDn   change channel\n'
+                tr('↑ / ↓  or  PgUp / PgDn   change channel\n')
                 '← / →   volume        M   mute\n'
-                'Space   pause         F   fullscreen (or double-click)\n'
-                'L   channel list      I   programme info      Esc   back',
+                tr('Space   pause         F   fullscreen (or double-click)\n')
+                tr('L   channel list      I   programme info      Esc   back'),
                 style: TextStyle(color: cs.onSurfaceVariant, height: 1.6),
               ),
             ],

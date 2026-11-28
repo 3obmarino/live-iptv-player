@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'api.dart' show describeError;
+import 'l10n.dart';
 
 /// Build number baked in by CI (--dart-define=APP_BUILD=N). 0 = local build.
 const int appBuild = int.fromEnvironment('APP_BUILD', defaultValue: 0);
@@ -192,12 +193,12 @@ class Updater extends ChangeNotifier {
     }
     if (expected == null) {
       await file.delete().catchError((_) => file);
-      throw Exception('Could not verify the update (no checksum published)');
+      throw Exception(tr('Could not verify the update (no checksum published)'));
     }
     final actual = (await sha256.bind(file.openRead()).first).toString();
     if (actual != expected) {
       await file.delete().catchError((_) => file);
-      throw Exception('The downloaded update failed verification and was deleted');
+      throw Exception(tr('The downloaded update failed verification and was deleted'));
     }
   }
 
@@ -207,7 +208,7 @@ class Updater extends ChangeNotifier {
       final resp = await client
           .send(http.Request('GET', Uri.parse(url)))
           .timeout(const Duration(seconds: 60));
-      if (resp.statusCode != 200) throw Exception('Download failed (HTTP ${resp.statusCode})');
+      if (resp.statusCode != 200) throw Exception(tr('Download failed (HTTP {c})', {'c': resp.statusCode}));
       final total = resp.contentLength ?? 0;
       var got = 0;
       var lastPct = -1;

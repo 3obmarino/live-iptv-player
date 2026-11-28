@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import 'common.dart';
+import '../l10n.dart';
 
 const kAll = '__all__';
 const kFavourites = '__fav__';
@@ -61,7 +62,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 const SizedBox(width: 8),
                 if (star)
                   IconButton(
-                    tooltip: fav ? 'Remove favourite category' : 'Favourite category',
+                    tooltip: fav ? 'Remove favourite category' : tr('Favourite category'),
                     icon: Icon(fav ? Icons.star_rounded : Icons.star_outline_rounded,
                         color: fav ? accentOf(context) : cs.onSurfaceVariant),
                     onPressed: () => s.toggleFavoriteCategory(id),
@@ -79,20 +80,20 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         final searchField = TextField(
           autofocus: !compact,
           onChanged: (v) => setState(() => _q = v),
-          decoration: const InputDecoration(
-              hintText: 'Search categories',
+          decoration: InputDecoration(
+              hintText: tr('Search categories'),
               prefixIcon: Icon(Icons.search, size: 20)),
         );
         return Scaffold(
           appBar: AppBar(
             leading: IconButton(
                 icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
-            title: const Text('Categories'),
+            title: Text(tr('Categories')),
             actions: [
               if (!compact) SizedBox(width: 340, child: searchField),
               const SizedBox(width: 16),
               Tooltip(
-                message: 'Favourite categories only',
+                message: tr('Favourite categories only'),
                 child: Row(children: [
                   Icon(Icons.star_rounded, size: 20, color: cs.onSurfaceVariant),
                   Switch(
@@ -115,16 +116,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ),
           body: ListView(children: [
             if (!_favOnly && q.isEmpty) ...[
-              row(kAll, 'All channels', s.channels.length,
+              row(kAll, tr('All channels'), s.channels.length,
                   star: false, icon: Icons.apps_rounded),
-              row(kFavourites, 'Favourite channels', favCount,
+              row(kFavourites, tr('Favourite channels'), favCount,
                   star: false, icon: Icons.star_rounded),
             ],
             for (final c in cats) row(c.id, c.name, counts[c.id] ?? 0),
             if (cats.isEmpty && _favOnly)
               Padding(
                 padding: const EdgeInsets.all(32),
-                child: Text('No favourite categories yet. Click a star to add one.',
+                child: Text(tr('No favourite categories yet. Click a star to add one.'),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: cs.onSurfaceVariant)),
               ),

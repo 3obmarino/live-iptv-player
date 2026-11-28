@@ -4,6 +4,7 @@ import '../app_state.dart';
 import '../models.dart';
 import 'common.dart';
 import '../updater.dart' show kTvBuild;
+import '../l10n.dart';
 
 class EpgSettingsScreen extends StatefulWidget {
   const EpgSettingsScreen({super.key});
@@ -23,7 +24,7 @@ class _EpgSettingsScreenState extends State<EpgSettingsScreen> {
 
   Future<void> _refreshNow() async {
     final err = await AppState.I.refreshEpg();
-    if (mounted) toast(context, err ?? 'TV guide updated');
+    if (mounted) toast(context, err ?? tr('TV guide updated'));
   }
 
   Future<void> _saveUrl() async {
@@ -35,7 +36,7 @@ class _EpgSettingsScreenState extends State<EpgSettingsScreen> {
     p.customEpgUrl = v == p.defaultEpgUrl ? '' : v;
     await s.profileChanged(p);
     if (!mounted) return;
-    toast(context, 'Saved');
+    toast(context, tr('Saved'));
     if (p.effectiveEpgUrl != before) _refreshNow();
   }
 
@@ -46,7 +47,7 @@ class _EpgSettingsScreenState extends State<EpgSettingsScreen> {
     p.customEpgUrl = '';
     _url.text = p.defaultEpgUrl;
     await s.profileChanged(p);
-    if (mounted) toast(context, 'Using the provider\'s default EPG');
+    if (mounted) toast(context, tr('Using the provider\'s default EPG'));
   }
 
   Future<void> _pickShift() async {
@@ -54,7 +55,7 @@ class _EpgSettingsScreenState extends State<EpgSettingsScreen> {
     final v = await showDialog<int>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('Time shift'),
+        title: Text(tr('Time shift')),
         children: [
           SizedBox(
             width: 280,
@@ -88,11 +89,11 @@ class _EpgSettingsScreenState extends State<EpgSettingsScreen> {
           final p = s.active;
           final last = p?.epgUpdated;
           final next = s.nextEpgRefresh;
-          var refreshSub = last == null ? 'Never updated' : 'Last updated ${fmtDateTime(last)}';
+          var refreshSub = last == null ? tr('Never updated') : tr('Last updated {t}', {'t': fmtDateTime(last)});
           if (!s.epgLoading && s.epgError != null) {
             refreshSub += '\nLast attempt failed: ${s.epgError}';
           }
-          final freqSub = (epgFrequencies[s.settings.epgRefreshHours] ?? '') +
+          final freqSub = tr(epgFrequencies[s.settings.epgRefreshHours] ?? '') +
               (next != null && s.settings.epgEnabled
                   ? '  ·  next update ${fmtDateTime(next.isBefore(DateTime.now()) ? DateTime.now() : next)}'
                   : '');
@@ -101,7 +102,7 @@ class _EpgSettingsScreenState extends State<EpgSettingsScreen> {
             children: [
               SwitchListTile(
                 autofocus: kTvBuild,
-                title: const Text('Enabled'),
+                title: Text(tr('Enabled')),
                 value: s.settings.epgEnabled,
                 onChanged: (v) => s.updateSettings((x) => x.epgEnabled = v),
               ),
@@ -120,7 +121,7 @@ class _EpgSettingsScreenState extends State<EpgSettingsScreen> {
               ListTile(
                 enabled: s.settings.epgEnabled,
                 leading: const Icon(Icons.update),
-                title: const Text('Refresh frequency'),
+                title: Text(tr('Refresh frequency')),
                 subtitle: Text(freqSub),
                 onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(builder: (_) => const _FrequencyScreen())),
@@ -128,18 +129,18 @@ class _EpgSettingsScreenState extends State<EpgSettingsScreen> {
               const Divider(),
               ListTile(
                 leading: const Icon(Icons.more_time),
-                title: const Text('Time shift'),
+                title: Text(tr('Time shift')),
                 subtitle: Text('${s.settings.epgTimeShiftHours}h'),
                 onTap: _pickShift,
               ),
               const Divider(),
               const SizedBox(height: 16),
-              const Text('Custom URL', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(tr('Custom URL'), style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 4),
               Text(
                 p == null || p.defaultEpgUrl.isEmpty
-                    ? 'XMLTV address (.xml or .xml.gz).'
-                    : 'Leave as is to use the provider\'s own guide. Clear resets it.',
+                    ? tr('XMLTV address (.xml or .xml.gz).')
+                    : tr('Leave as is to use the provider\'s own guide. Clear resets it.'),
                 style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
               ),
               const SizedBox(height: 12),
@@ -150,7 +151,7 @@ class _EpgSettingsScreenState extends State<EpgSettingsScreen> {
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
                     onPressed: p == null ? null : _clearUrl,
-                    child: const Text('Clear'),
+                    child: Text(tr('Clear')),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -158,7 +159,7 @@ class _EpgSettingsScreenState extends State<EpgSettingsScreen> {
                   child: FilledButton(
                     style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(46)),
                     onPressed: p == null ? null : _saveUrl,
-                    child: const Text('Save'),
+                    child: Text(tr('Save')),
                   ),
                 ),
               ]),
@@ -177,7 +178,7 @@ class _FrequencyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppState.I;
     return Scaffold(
-      appBar: AppBar(title: const Text('Refresh frequency')),
+      appBar: AppBar(title: Text(tr('Refresh frequency'))),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
@@ -189,7 +190,7 @@ class _FrequencyScreen extends StatelessWidget {
                     : Icons.radio_button_unchecked,
                 color: s.settings.epgRefreshHours == e.key ? accentOf(context) : null,
               ),
-              title: Text(e.value),
+              title: Text(tr(e.value)),
               onTap: () async {
                 await s.updateSettings((x) => x.epgRefreshHours = e.key);
                 if (context.mounted) Navigator.pop(context);

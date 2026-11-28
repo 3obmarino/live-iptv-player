@@ -8,6 +8,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'app_state.dart';
 import 'diag.dart';
 import 'models.dart';
+import 'l10n.dart';
 
 /// Playback engine shared by the TV screens: opens channels, reconnects
 /// dropped streams, reports status. UI listens via ChangeNotifier.
@@ -108,7 +109,7 @@ class PlayerCore extends ChangeNotifier with WidgetsBindingObserver {
     if (_retries >= 5) {
       failed = true;
       loading = false;
-      status = 'This channel isn\'t responding right now. Try again in a moment, or pick another channel.';
+      status = tr('This channel isn\'t responding right now. Try again in a moment, or pick another channel.');
       notifyListeners();
       return;
     }

@@ -12,6 +12,7 @@ import 'ui/live_screen.dart';
 import 'ui/profiles_screen.dart';
 import 'tv/tv_home.dart';
 import 'updater.dart';
+import 'l10n.dart';
 
 const appTitle = 'LiveTV Player';
 
@@ -124,10 +125,10 @@ class UpdateBar extends StatelessWidget {
               Expanded(
                 child: Text(
                   u.installing
-                      ? 'Downloading version ${info.version}… ${((u.progress ?? 0) * 100).round()}%'
+                      ? tr('Downloading version {v}… {p}%', {'v': info.version, 'p': ((u.progress ?? 0) * 100).round()})
                       : u.error != null
-                          ? 'Update failed: ${u.error}'
-                          : 'Version ${info.version} is available (you have $appVersion).',
+                          ? tr('Update failed: {e}', {'e': u.error})
+                          : tr('Version {v} is available (you have {c}).', {'v': info.version, 'c': appVersion}),
                   style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w500),
                 ),
               ),
@@ -137,11 +138,11 @@ class UpdateBar extends StatelessWidget {
                   child: LinearProgressIndicator(value: u.progress, color: accentOf(context)),
                 )
               else ...[
-                TextButton(onPressed: u.dismiss, child: const Text('Later')),
+                TextButton(onPressed: u.dismiss, child: Text(tr('Later'))),
                 const SizedBox(width: 4),
                 FilledButton(
                   onPressed: u.install,
-                  child: const Text('Install'),
+                  child: Text(tr('Install')),
                 ),
               ],
             ]),

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../models.dart';
 import 'common.dart';
+import '../l10n.dart';
 
 /// Timeline TV guide: channel column on the left, programmes on a
 /// horizontally scrollable time axis, red line at "now".
@@ -91,7 +92,7 @@ class _EpgGridState extends State<EpgGrid> {
                 height: headerH,
                 child: Center(
                   child: ActionChip(
-                    tooltip: 'Jump to now',
+                    tooltip: tr('Jump to now'),
                     label: Text(fmtDate(DateTime.now()), style: const TextStyle(fontSize: 12)),
                     onPressed: _jumpToNow,
                     visualDensity: VisualDensity.compact,
@@ -284,7 +285,7 @@ class _EpgGridState extends State<EpgGrid> {
               color: cs.surfaceContainerLow, borderRadius: BorderRadius.circular(6)),
           padding: EdgeInsets.only(left: math.max(8, _xFor(now) - 120)),
           alignment: Alignment.centerLeft,
-          child: Text('No TV guide',
+          child: Text(tr('No TV guide'),
               style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant)),
         ),
       ));

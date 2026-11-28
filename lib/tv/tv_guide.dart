@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../app_state.dart';
 import '../models.dart';
 import '../ui/common.dart';
+import '../l10n.dart';
 
 /// Full-screen TV guide (TiviMate style). The live video is drawn by the
 /// parent inside [preview]; this widget paints everything around it:
@@ -181,10 +182,10 @@ class TvGuideState extends State<TvGuide> {
   Widget build(BuildContext context) {
     final now = DateTime.now().millisecondsSinceEpoch;
     if (widget.channels.isEmpty) {
-      return const ColoredBox(
+      return ColoredBox(
         color: Color(0xFF101114),
         child: Center(
-            child: Text('No channels in this category',
+            child: Text(tr('No channels in this category'),
                 style: TextStyle(color: Colors.white70, fontSize: 18))),
       );
     }
@@ -437,7 +438,7 @@ class TvGuideState extends State<TvGuide> {
             color: selected ? kAccent : const Color(0xFF24262E),
             borderRadius: BorderRadius.circular(4),
           ),
-          child: Text('No TV guide for this channel',
+          child: Text(tr('No TV guide for this channel'),
               style: TextStyle(color: selected ? kOnAccent : Colors.white60, fontSize: 16)),
         ),
       ));

@@ -12,6 +12,7 @@ import 'epg_settings_screen.dart';
 import 'player_settings_screen.dart';
 import 'profiles_screen.dart';
 import '../updater.dart';
+import '../l10n.dart';
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
@@ -27,20 +28,20 @@ class MenuScreen extends StatelessWidget {
         final t = Theme.of(context).textTheme;
 
         String playlistSub() {
-          if (s.loadingChannels) return 'Updating channel list…';
-          final parts = <String>['${s.channels.length} channels'];
-          if (p?.channelsUpdated != null) parts.add('updated ${fmtDateTime(p!.channelsUpdated!)}');
+          if (s.loadingChannels) return tr('Updating channel list…');
+          final parts = <String>[tr('{n} channels', {'n': s.channels.length})];
+          if (p?.channelsUpdated != null) parts.add(tr('updated {t}', {'t': fmtDateTime(p!.channelsUpdated!)}));
           var out = parts.join(' · ');
-          if (s.channelsError != null) out += '\nLast update failed: ${s.channelsError}';
+          if (s.channelsError != null) out += '\n${tr('Last update failed: {e}', {'e': s.channelsError})}';
           return out;
         }
 
         String epgSub() {
-          if (!s.settings.epgEnabled) return 'Disabled';
-          if (s.epgLoading) return 'Updating TV guide…';
+          if (!s.settings.epgEnabled) return tr('Disabled');
+          if (s.epgLoading) return tr('Updating TV guide…');
           final last = p?.epgUpdated;
-          return '${epgFrequencies[s.settings.epgRefreshHours] ?? ''}'
-              '${last == null ? '' : ' · last ${fmtDateTime(last)}'}';
+          return '${tr(epgFrequencies[s.settings.epgRefreshHours] ?? '')}'
+              '${last == null ? '' : ' · ${tr('last {t}', {'t': fmtDateTime(last)})}'}';
         }
 
         var firstItem = true;
@@ -76,83 +77,85 @@ class MenuScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: compact ? 12 : 20),
-          Text(p?.name ?? 'No profile',
+          Text(p?.name ?? tr('No profile'),
               style: t.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
           if (p != null)
             Text(p.host, style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
           if (p?.expDate != null)
-            Text('Expires ${fmtDate(p!.expDate!)}',
+            Text(tr('Expires {d}', {'d': fmtDate(p!.expDate!)}),
                 style: t.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
           SizedBox(height: compact ? 12 : 20),
           OutlinedButton.icon(
             onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const ProfilesScreen())),
             icon: const Icon(Icons.manage_accounts_outlined, size: 18),
-            label: const Text('Manage profiles'),
+            label: Text(tr('Manage profiles')),
           ),
         ];
         final menuItems = <Widget>[
-          item(Icons.playlist_play_rounded, 'Playlist', playlistSub(), () async {
+          item(Icons.playlist_play_rounded, tr('Playlist'), playlistSub(), () async {
             if (p == null) return;
             final err = await s.refreshChannels(p);
-            if (context.mounted) toast(context, err ?? 'Channel list updated');
+            if (context.mounted) toast(context, err ?? tr('Channel list updated'));
           }),
-          item(Icons.play_circle_outline_rounded, 'Video player settings', null,
+          item(Icons.play_circle_outline_rounded, tr('Video player settings'), null,
               () => Navigator.of(context).push(MaterialPageRoute<void>(
                   builder: (_) => const PlayerSettingsScreen()))),
           item(Icons.calendar_view_week_rounded, 'EPG', epgSub(),
               () => Navigator.of(context).push(MaterialPageRoute<void>(
                   builder: (_) => const EpgSettingsScreen()))),
-          item(Icons.dark_mode_outlined, 'Theme', _themeLabel(s.settings.themeMode),
+          item(Icons.dark_mode_outlined, tr('Theme'), _themeLabel(s.settings.themeMode),
               () => _pickTheme(context)),
+          item(Icons.translate_rounded, tr('Language'), _langLabel(s.settings.language),
+              () => _pickLanguage(context)),
           if (Autostart.supported)
             item(
                 Icons.power_settings_new_rounded,
-                'Start on boot',
+                tr('Start on boot'),
                 !Autostart.I.enabled
-                    ? 'Off – open LiveTV Player when the device starts'
+                    ? tr('Off – open LiveTV Player when the device starts')
                     : Autostart.I.permitted
-                        ? 'On'
-                        : 'On – allow "Display over other apps" for LiveTV Player to finish',
+                        ? tr('On')
+                        : tr('On – allow "Display over other apps" for LiveTV Player to finish'),
                 () async {
               final turnOn = !Autostart.I.enabled;
               final ok = await Autostart.I.setEnabled(turnOn);
               if (!context.mounted) return;
               if (!ok) {
                 toast(context,
-                    'Open Android Settings > Apps > LiveTV Player and allow "Display over other apps"');
+                    tr('Open Android Settings > Apps > LiveTV Player and allow "Display over other apps"'));
               } else if (!turnOn) {
-                toast(context, 'Start on boot is off');
+                toast(context, tr('Start on boot is off'));
               } else if (Autostart.I.permitted) {
-                toast(context, 'LiveTV Player will open when the device starts');
+                toast(context, tr('LiveTV Player will open when the device starts'));
               }
             }),
           if (!Platform.isAndroid)
-            item(Icons.fact_check_outlined, 'Check channels',
-                'Find channels that don\'t work',
+            item(Icons.fact_check_outlined, tr('Check channels'),
+                tr('Find channels that don\'t work'),
                 () => Navigator.of(context).push(MaterialPageRoute<void>(
                     builder: (_) => const ChannelCheckScreen()))),
           if (Diag.enabled)
-            item(Icons.receipt_long_outlined, 'Share player log',
+            item(Icons.receipt_long_outlined, tr('Share player log'),
                 Platform.isWindows
-                    ? 'Open the log of what the player does'
+                    ? tr('Open the log of what the player does')
                     : kTvBuild
-                        ? 'Save it to the Download folder, to help find playback problems'
-                        : 'Send it to help find playback problems',
+                        ? tr('Save it to the Download folder, to help find playback problems')
+                        : tr('Send it to help find playback problems'),
                 () async {
               final msg = await Diag.share(tv: kTvBuild);
               if (context.mounted) toast(context, msg);
             }),
-          item(Icons.system_update_alt_rounded, 'Check for updates', 'Version $appVersion',
+          item(Icons.system_update_alt_rounded, tr('Check for updates'), tr('Version {v}', {'v': appVersion}),
               () async {
             if (appBuild == 0) {
-              toast(context, 'This is a local development build');
+              toast(context, tr('This is a local development build'));
               return;
             }
             final u = await Updater.I.check();
             if (!context.mounted) return;
             if (u == null) {
-              toast(context, 'You have the latest version ($appVersion)');
+              toast(context, tr('You have the latest version ({v})', {'v': appVersion}));
             } else {
               showUpdateDialog(context);
             }
@@ -206,14 +209,45 @@ class MenuScreen extends StatelessWidget {
   }
 
   static String _themeLabel(String m) =>
-      switch (m) { 'light' => 'Light', 'dark' => 'Dark', _ => 'Follow system' };
+      switch (m) { 'light' => tr('Light'), 'dark' => tr('Dark'), _ => tr('Follow system') };
+
+  static String _langLabel(String m) => switch (m) {
+        'da' => 'Dansk',
+        'en' => 'English',
+        _ => tr('Automatic (device language)'),
+      };
+
+  Future<void> _pickLanguage(BuildContext context) async {
+    final s = AppState.I;
+    final v = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(tr('Language')),
+        children: [
+          for (final m in const ['auto', 'da', 'en'])
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, m),
+              child: Row(children: [
+                Icon(s.settings.language == m
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                    color: s.settings.language == m ? accentOf(ctx) : null, size: 20),
+                const SizedBox(width: 12),
+                Text(_langLabel(m)),
+              ]),
+            ),
+        ],
+      ),
+    );
+    if (v != null) await s.updateSettings((x) => x.language = v);
+  }
 
   Future<void> _pickTheme(BuildContext context) async {
     final s = AppState.I;
     final v = await showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('Theme'),
+        title: Text(tr('Theme')),
         children: [
           for (final m in const ['system', 'light', 'dark'])
             SimpleDialogOption(
@@ -245,40 +279,40 @@ void showUpdateDialog(BuildContext context) {
         final u = Updater.I;
         final info = u.available;
         return AlertDialog(
-          title: Text(info == null ? 'Up to date' : 'Version ${info.version} is available'),
+          title: Text(info == null ? tr('Up to date') : tr('Version {v} is available', {'v': info.version})),
           content: SizedBox(
             width: 420,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('You have $appVersion.'),
+                Text(tr('You have {v}.', {'v': appVersion})),
                 if (u.installing) ...[
                   const SizedBox(height: 16),
                   LinearProgressIndicator(value: u.progress),
                   const SizedBox(height: 8),
-                  Text('Downloading… ${((u.progress ?? 0) * 100).round()}%'),
+                  Text(tr('Downloading… {p}%', {'p': ((u.progress ?? 0) * 100).round()})),
                 ],
                 if (u.error != null) ...[
                   const SizedBox(height: 12),
-                  Text('Update failed: ${u.error}',
+                  Text(tr('Update failed: {e}', {'e': u.error}),
                       style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
                 ],
                 if (Platform.isAndroid && !u.installing) ...[
                   const SizedBox(height: 12),
-                  const Text(
-                      'Android may ask you to allow LiveTV Player to install apps the first time.',
+                  Text(
+                      tr('Android may ask you to allow LiveTV Player to install apps the first time.'),
                       style: TextStyle(fontSize: 13)),
                 ],
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Later')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Later'))),
             FilledButton(
               autofocus: true,
               onPressed: info == null || u.installing ? null : u.install,
-              child: const Text('Install'),
+              child: Text(tr('Install')),
             ),
           ],
         );

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../models.dart';
 import 'common.dart';
+import '../l10n.dart';
 
 class ChannelGrid extends StatefulWidget {
   const ChannelGrid(
@@ -175,13 +176,13 @@ class ChannelTile extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: fav ? 'Remove from favourites' : 'Add to favourites',
+                tooltip: fav ? 'Remove from favourites' : tr('Add to favourites'),
                 icon: Icon(fav ? Icons.star_rounded : Icons.star_outline_rounded,
                     color: fav ? accentOf(context) : cs.onSurfaceVariant),
                 onPressed: () => s.toggleFavorite(channel),
               ),
               PopupMenuButton<String>(
-                tooltip: 'More',
+                tooltip: tr('More'),
                 icon: Icon(Icons.more_vert, color: cs.onSurfaceVariant),
                 onSelected: (v) {
                   if (v == 'guide') {
@@ -193,12 +194,12 @@ class ChannelTile extends StatelessWidget {
                   }
                 },
                 itemBuilder: (_) => [
-                  const PopupMenuItem(value: 'guide', child: Text('TV guide for this channel')),
+                  PopupMenuItem(value: 'guide', child: Text(tr('TV guide for this channel'))),
                   PopupMenuItem(
                       value: 'fav',
-                      child: Text(fav ? 'Remove from favourites' : 'Add to favourites')),
+                      child: Text(fav ? 'Remove from favourites' : tr('Add to favourites'))),
                   if (catName != null)
-                    PopupMenuItem(value: 'cat', child: Text('Go to category: $catName')),
+                    PopupMenuItem(value: 'cat', child: Text(tr('Go to category: {name}', {'name': catName}))),
                 ],
               ),
             ],

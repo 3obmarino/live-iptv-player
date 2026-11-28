@@ -10,6 +10,7 @@ import 'models.dart';
 import 'secure_store.dart';
 import 'logo_cache.dart';
 import 'storage.dart';
+import 'l10n.dart';
 
 /// Single app-wide state object. Widgets listen with ListenableBuilder.
 class AppState extends ChangeNotifier {
@@ -76,6 +77,7 @@ class AppState extends ChangeNotifier {
     if (j is Map<String, dynamic>) {
       final sj = j['settings'];
       if (sj is Map) settings = Settings.fromJson(sj.cast<String, dynamic>());
+      L10n.setting = settings.language;
       final pl = j['profiles'];
       if (pl is List) {
         profiles = [
@@ -262,8 +264,8 @@ class AppState extends ChangeNotifier {
     if (p == null) return 'No profile selected';
     if (epgLoading) return null;
     final url = p.effectiveEpgUrl;
-    if (url.isEmpty) return 'This profile has no EPG URL';
-    if (channels.isEmpty) return 'Load the channel list first';
+    if (url.isEmpty) return tr('This profile has no EPG URL');
+    if (channels.isEmpty) return tr('Load the channel list first');
 
     epgLoading = true;
     epgError = null;
@@ -279,7 +281,7 @@ class AppState extends ChangeNotifier {
       final names = <String>{for (final c in channels) normalizeName(c.name)};
       final data = await parseEpgFile(tmp.path, ids, names);
       if (data.isEmpty) {
-        throw Exception('The EPG contained no programmes for your channels');
+        throw Exception(tr('The EPG contained no programmes for your channels'));
       }
       await Store.writeString('epg_${p.id}.json', await encodeEpg(data));
       p.epgUpdated = DateTime.now();
@@ -306,6 +308,7 @@ class AppState extends ChangeNotifier {
   Future<void> updateSettings(void Function(Settings s) change) async {
     final oldShift = settings.epgTimeShiftHours;
     change(settings);
+    L10n.setting = settings.language;
     if (settings.epgTimeShiftHours != oldShift) _applyShift();
     notifyListeners();
     await save();

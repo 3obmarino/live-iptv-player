@@ -14,6 +14,7 @@ import '../player_core.dart'
     show videoConfig, tuneForLive, streamStarted, newPlayer, attachPlayerLog;
 import '../models.dart' show Channel;
 import 'common.dart';
+import '../l10n.dart';
 
 /// Full-window live player (libmpv via media_kit) with our own large
 /// control overlay. Same overlay on Windows (mouse) and Android (touch).
@@ -178,7 +179,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       setState(() {
         _failed = true;
         _loading = false;
-        _status = 'This channel isn\'t responding right now. Try again in a moment, or pick another channel.';
+        _status = tr('This channel isn\'t responding right now. Try again in a moment, or pick another channel.');
       });
       return;
     }
@@ -471,20 +472,20 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
               child: Row(children: [
-                _iconBtn(Icons.close_rounded, 'Back (Esc)', _exitOrBack, size: 28),
+                _iconBtn(Icons.close_rounded, tr('Back (Esc)'), _exitOrBack, size: 28),
                 const Spacer(),
                 if (_desktop)
                   _iconBtn(
                       _fullscreen ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded,
-                      'Fullscreen (F)',
+                      tr('Fullscreen (F)'),
                       _toggleFullscreen),
                 _iconBtn(
                   fav ? Icons.star_rounded : Icons.star_outline_rounded,
-                  fav ? 'Remove from favourites' : 'Add to favourites',
+                  fav ? 'Remove from favourites' : tr('Add to favourites'),
                   () => setState(() => AppState.I.toggleFavorite(_channel)),
                   color: fav ? kAccent : Colors.white,
                 ),
-                _iconBtn(Icons.format_list_bulleted_rounded, 'Channel list (L)', _toggleList),
+                _iconBtn(Icons.format_list_bulleted_rounded, tr('Channel list (L)'), _toggleList),
               ]),
             ),
           ),
@@ -493,7 +494,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
         // ---- centre: previous / play-pause / next
         Center(
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            _iconBtn(Icons.skip_previous_rounded, 'Previous channel (↑)', () => _zap(-1),
+            _iconBtn(Icons.skip_previous_rounded, tr('Previous channel (↑)'), () => _zap(-1),
                 size: 40),
             const SizedBox(width: 36),
             Tooltip(
@@ -522,7 +523,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               ),
             ),
             const SizedBox(width: 36),
-            _iconBtn(Icons.skip_next_rounded, 'Next channel (↓)', () => _zap(1), size: 40),
+            _iconBtn(Icons.skip_next_rounded, tr('Next channel (↓)'), () => _zap(1), size: 40),
           ]),
         ),
 
@@ -585,7 +586,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
                             : _volume < 50
                                 ? Icons.volume_down_rounded
                                 : Icons.volume_up_rounded,
-                        'Mute (M)',
+                        tr('Mute (M)'),
                         _toggleMute,
                         size: 24,
                       ),
@@ -659,11 +660,11 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
   Widget _audioButton() {
     String label(AudioTrack a, int i) {
       final parts = [a.title, a.language].whereType<String>().where((x) => x.isNotEmpty);
-      return parts.isEmpty ? 'Audio ${i + 1}' : parts.join(' · ');
+      return parts.isEmpty ? tr('Audio {n}', {'n': i + 1}) : parts.join(' · ');
     }
 
     return PopupMenuButton<int>(
-      tooltip: 'Audio track',
+      tooltip: tr('Audio track'),
       onOpened: () => _overBars = true,
       onSelected: (i) {
         _player.setAudioTrack(_audioTracks[i]);
@@ -677,12 +678,12 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
             child: Text(label(_audioTracks[i], i)),
           ),
       ],
-      child: _pill(const Padding(
+      child: _pill(Padding(
         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.audiotrack_rounded, color: Colors.white, size: 22),
           SizedBox(width: 6),
-          Text('Audio', style: TextStyle(color: Colors.white, fontSize: 14)),
+          Text(tr('Audio'), style: TextStyle(color: Colors.white, fontSize: 14)),
         ]),
       )),
     );
@@ -694,7 +695,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
       decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.8), borderRadius: BorderRadius.circular(14)),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('Could not play this channel',
+          Text(tr('Could not play this channel'),
               style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
         const SizedBox(height: 10),
         ConstrainedBox(
@@ -710,7 +711,7 @@ class _PlayerScreenState extends State<PlayerScreen> with WidgetsBindingObserver
               _retries = 0;
               _open();
             },
-            child: const Text('Try again'),
+            child: Text(tr('Try again')),
           ),
         ],
       ]),

@@ -6,6 +6,7 @@ import '../app_state.dart';
 import '../logo_cache.dart';
 import '../models.dart';
 import '../updater.dart' show kTvBuild;
+import '../l10n.dart';
 
 /// "Matrix" green. Bright on dark surfaces; a deeper green on light ones
 /// so text and icons stay readable. Text on top of kAccent uses kOnAccent.
@@ -132,9 +133,9 @@ String dayLabel(DateTime d) {
   final today = DateTime(now.year, now.month, now.day);
   final day = DateTime(d.year, d.month, d.day);
   final diff = day.difference(today).inDays;
-  if (diff == 0) return 'Today';
-  if (diff == 1) return 'Tomorrow';
-  if (diff == -1) return 'Yesterday';
+  if (diff == 0) return tr('Today');
+  if (diff == 1) return tr('Tomorrow');
+  if (diff == -1) return tr('Yesterday');
   return '${two(d.day)}/${two(d.month)}';
 }
 
@@ -279,9 +280,9 @@ void showProgrammeDetails(BuildContext context, Channel c, Programme p,
               onWatch();
             },
             icon: const Icon(Icons.play_arrow),
-            label: const Text('Watch channel'),
+            label: Text(tr('Watch channel')),
           ),
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Close'))),
       ],
     ),
   );
@@ -305,7 +306,7 @@ void showChannelGuide(BuildContext context, Channel c, {VoidCallback? onWatch}) 
           width: 560,
           height: 520,
           child: progs.isEmpty
-              ? const Center(child: Text('No TV guide for this channel'))
+              ? Center(child: Text(tr('No TV guide for this channel')))
               : ListView.separated(
                   itemCount: progs.length,
                   separatorBuilder: (_, __) => const Divider(),
@@ -340,9 +341,9 @@ void showChannelGuide(BuildContext context, Channel c, {VoidCallback? onWatch}) 
                 onWatch();
               },
               icon: const Icon(Icons.play_arrow),
-              label: const Text('Watch'),
+              label: Text(tr('Watch')),
             ),
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Close'))),
         ],
       );
     },
@@ -545,7 +546,7 @@ class _TvEditDialogState extends State<_TvEditDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            Text('Press →| on the keyboard when done. Back also saves.',
+            Text(tr('Press →| on the keyboard when done. Back also saves.'),
                 style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ]),
         ),

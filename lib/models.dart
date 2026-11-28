@@ -217,6 +217,7 @@ class Settings {
   String userAgent = '';
   bool epgView = false;
   double volume = 100;
+  String language = 'auto'; // auto | da | en
 
   Map<String, dynamic> toJson() => {
         'epgEnabled': epgEnabled,
@@ -228,6 +229,7 @@ class Settings {
         'userAgent': userAgent,
         'epgView': epgView,
         'volume': volume,
+        'language': language,
       };
 
   factory Settings.fromJson(Map<String, dynamic> j) => Settings()
@@ -239,5 +241,6 @@ class Settings {
     ..hwdec = j['hwdec'] as bool? ?? true
     ..userAgent = j['userAgent'] as String? ?? ''
     ..epgView = j['epgView'] as bool? ?? false
-    ..volume = (j['volume'] as num?)?.toDouble() ?? 100;
+    ..volume = (j['volume'] as num?)?.toDouble() ?? 100
+    ..language = j['language'] as String? ?? 'auto';
 }

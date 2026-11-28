@@ -12,6 +12,7 @@ import '../ui/common.dart';
 import '../ui/menu_screen.dart';
 import '../updater.dart';
 import 'tv_guide.dart';
+import '../l10n.dart';
 
 enum _Mode { play, info, guide, sidebar }
 
@@ -123,8 +124,8 @@ class _TvHomeState extends State<TvHome> {
       ..sort((a, b) =>
           (favCats.contains(a.id) ? 0 : 1).compareTo(favCats.contains(b.id) ? 0 : 1));
     return [
-      const _Cat('__fav__', 'Favourites'),
-      const _Cat('__all__', 'All channels'),
+      _Cat('__fav__', tr('Favourites')),
+      _Cat('__all__', tr('All channels')),
       for (final c in cats) _Cat(c.id, c.name),
     ];
   }
@@ -220,7 +221,7 @@ class _TvHomeState extends State<TvHome> {
   Future<void> _openSettings() async {
     await Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => Scaffold(
-        appBar: AppBar(title: const Text('Settings')),
+        appBar: AppBar(title: Text(tr('Settings'))),
         body: const MenuScreen(),
       ),
     ));
@@ -563,12 +564,12 @@ class _TvHomeState extends State<TvHome> {
         if (s.loadingChannels) ...[
           const CircularProgressIndicator(),
           const SizedBox(height: 16),
-          const Text('Loading channels…', style: TextStyle(color: Colors.white70, fontSize: 18)),
+          Text(tr('Loading channels…'), style: TextStyle(color: Colors.white70, fontSize: 18)),
         ] else ...[
-          Text(s.channelsError ?? 'No channels loaded',
+          Text(s.channelsError ?? tr('No channels loaded'),
               style: const TextStyle(color: Colors.white70, fontSize: 18)),
           const SizedBox(height: 8),
-          const Text('Press BACK twice, then ◀ and OK for Settings',
+          Text(tr('Press BACK twice, then ◀ and OK for Settings'),
               style: TextStyle(color: Colors.white38, fontSize: 14)),
         ],
       ]);
@@ -585,7 +586,7 @@ class _TvHomeState extends State<TvHome> {
             const SizedBox(
                 width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 2.5)),
           if (_core.failed)
-            const Text('Could not play this channel',
+            Text(tr('Could not play this channel'),
                 style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
           const SizedBox(height: 10),
           ConstrainedBox(
@@ -640,7 +641,7 @@ class _TvHomeState extends State<TvHome> {
                 if (_railFocus)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 0, 12),
-                    child: Text(upd ? 'Settings  ·  update available' : 'Settings',
+                    child: Text(upd ? 'Settings  ·  update available' : tr('Settings'),
                         style: const TextStyle(color: kAccent, fontSize: 15)),
                   ),
                 Expanded(
@@ -874,10 +875,10 @@ class _TvHomeState extends State<TvHome> {
       ),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
       child: c == null
-          ? const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
               Icon(Icons.view_list_rounded, color: Colors.white, size: 40),
               SizedBox(height: 8),
-              Text('TV guide', style: TextStyle(color: Colors.white, fontSize: 18)),
+              Text(tr('TV guide'), style: TextStyle(color: Colors.white, fontSize: 18)),
             ])
           : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(child: Center(child: ChannelLogo(c, size: 52))),

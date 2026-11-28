@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../models.dart';
 import 'common.dart';
+import '../l10n.dart';
 
 class ProfilesScreen extends StatelessWidget {
   const ProfilesScreen({super.key});
@@ -18,7 +19,7 @@ class ProfilesScreen extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             automaticallyImplyLeading: canPop,
-            title: const Text('Profiles'),
+            title: Text(tr('Profiles')),
           ),
           floatingActionButton: FilledButton.icon(
             // Focused on first start, so OK on the remote opens it directly.
@@ -30,14 +31,14 @@ class ProfilesScreen extends StatelessWidget {
             onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const EditProfileScreen())),
             icon: const Icon(Icons.add),
-            label: const Text('Add profile'),
+            label: Text(tr('Add profile')),
           ),
           body: s.profiles.isEmpty
               ? Center(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     Icon(Icons.live_tv_rounded, size: 56, color: cs.onSurfaceVariant),
                     const SizedBox(height: 16),
-                    const Text('Add your IPTV provider to get started',
+                    Text(tr('Add your IPTV provider to get started'),
                         style: TextStyle(fontSize: 16)),
                   ]),
                 )
@@ -106,14 +107,14 @@ class _ProfileCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                             p.channelsUpdated == null
-                                ? 'Not loaded yet'
+                                ? tr('Not loaded yet')
                                 : fmtDateTime(p.channelsUpdated!),
                             style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12.5)),
                       ]),
                       if (isActive)
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
-                          child: Text('Active',
+                          child: Text(tr('Active'),
                               style: TextStyle(color: accentOf(context), fontWeight: FontWeight.w600, fontSize: 12.5)),
                         ),
                     ],
@@ -121,10 +122,10 @@ class _ProfileCard extends StatelessWidget {
                 ),
                 PopupMenuButton<String>(
                   onSelected: (v) => _action(context, v),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'refresh', child: Text('Refresh')),
-                    PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  itemBuilder: (_) => [
+                    PopupMenuItem(value: 'refresh', child: Text(tr('Refresh'))),
+                    PopupMenuItem(value: 'edit', child: Text(tr('Edit'))),
+                    PopupMenuItem(value: 'delete', child: Text(tr('Delete'))),
                   ],
                 ),
               ],
@@ -143,16 +144,16 @@ class _ProfileCard extends StatelessWidget {
     } else if (v == 'refresh') {
       var err = await s.refreshChannels(p);
       if (err == null && s.activeId == p.id) err = await s.refreshEpg();
-      if (context.mounted) toast(context, err ?? 'Profile refreshed');
+      if (context.mounted) toast(context, err ?? tr('Profile refreshed'));
     } else if (v == 'delete') {
       final ok = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text('Delete "${p.name}"?'),
-          content: const Text('Its channel list, TV guide and favourites are removed from this PC.'),
+          title: Text(tr('Delete "{name}"?', {'name': p.name})),
+          content: Text(tr('Its channel list, TV guide and favourites are removed from this PC.')),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancel'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Delete'))),
           ],
         ),
       );
@@ -190,11 +191,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _save() async {
     final xt = _type == ProfileType.xtream;
     if (xt && (_server.text.trim().isEmpty || _user.text.trim().isEmpty || _pass.text.trim().isEmpty)) {
-      setState(() => _err = 'Server, username and password are required.');
+      setState(() => _err = tr('Server, username and password are required.'));
       return;
     }
     if (!xt && _m3u.text.trim().isEmpty) {
-      setState(() => _err = 'The playlist URL is required.');
+      setState(() => _err = tr('The playlist URL is required.'));
       return;
     }
     setState(() {
@@ -260,9 +261,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               children: [
                 SegmentedButton<ProfileType>(
                   showSelectedIcon: false,
-                  segments: const [
+                  segments: [
                     ButtonSegment(value: ProfileType.xtream, label: Text('Xtream Codes')),
-                    ButtonSegment(value: ProfileType.m3u, label: Text('M3U / M3U8 playlist')),
+                    ButtonSegment(value: ProfileType.m3u, label: Text(tr('M3U / M3U8 playlist'))),
                   ],
                   selected: {_type},
                   onSelectionChanged: (v) => setState(() => _type = v.first),
@@ -271,26 +272,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 AppTextField(
                     controller: _name,
                     textInputAction: TextInputAction.next,
-                    decoration: dec('Name', 'e.g. Home')),
+                    decoration: dec(tr('Name'), tr('e.g. Home'))),
                 const SizedBox(height: 14),
                 if (xt) ...[
                   AppTextField(
                       controller: _server,
                       keyboardType: TextInputType.url,
                       textInputAction: TextInputAction.next,
-                      decoration: dec('Server URL', 'http://example.com:8080')),
+                      decoration: dec(tr('Server URL'), 'http://example.com:8080')),
                   const SizedBox(height: 14),
                   AppTextField(
                       controller: _user,
                       textInputAction: TextInputAction.next,
-                      decoration: dec('Username')),
+                      decoration: dec(tr('Username'))),
                   const SizedBox(height: 14),
                   AppTextField(
                     controller: _pass,
                     obscureText: _hidePass,
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => _busy ? null : _save(),
-                    decoration: dec('Password').copyWith(
+                    decoration: dec(tr('Password')).copyWith(
                       suffixIcon: IconButton(
                         icon: Icon(_hidePass ? Icons.visibility_outlined : Icons.visibility_off_outlined),
                         onPressed: () => setState(() => _hidePass = !_hidePass),
@@ -303,7 +304,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       keyboardType: TextInputType.url,
                       textInputAction: TextInputAction.done,
                       onSubmitted: (_) => _busy ? null : _save(),
-                      decoration: dec('M3U / M3U8 URL')),
+                      decoration: dec(tr('M3U / M3U8 URL'))),
                 if (_err != null) ...[
                   const SizedBox(height: 16),
                   Text(_err!, style: TextStyle(color: cs.error)),

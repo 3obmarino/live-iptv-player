@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:xml/xml_events.dart';
 
 import 'models.dart';
+import 'l10n.dart';
 
 /// Loose channel-name key used to match playlist channels to XMLTV
 /// display-names when the playlist has no (or a wrong) EPG id.
@@ -111,7 +112,7 @@ Future<void> downloadEpg(String url, String ua, File target) async {
     if (ua.isNotEmpty) req.headers['User-Agent'] = ua;
     final resp = await client.send(req).timeout(const Duration(seconds: 60));
     if (resp.statusCode != 200) {
-      throw Exception('The EPG server responded with HTTP ${resp.statusCode}');
+      throw Exception(tr('The EPG server responded with HTTP {c}', {'c': resp.statusCode}));
     }
     final sink = target.openWrite();
     try {

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'app_state.dart';
 import 'storage.dart';
+import 'l10n.dart';
 
 /// Small local log of what the player does, to find playback problems
 /// (Windows, phone and TV): player-log.txt in the app's data folder, at
@@ -56,11 +57,11 @@ class Diag {
   static Future<String> share({required bool tv}) async {
     final f = file;
     if (!f.existsSync() || f.lengthSync() == 0) {
-      return 'The log is empty – play a channel first';
+      return tr('The log is empty – play a channel first');
     }
     if (Platform.isWindows) {
       await launchUrl(Uri.file(f.path));
-      return 'Opened ${f.path}';
+      return tr('Opened {p}', {'p': f.path});
     }
     var text = await f.readAsString();
     final stamp = DateTime.now().toIso8601String().substring(0, 16).replaceAll(':', '-');
@@ -76,8 +77,8 @@ class Diag {
     try {
       final path = await _ch.invokeMethod<String>(
           'saveToDownloads', {'name': 'LiveTV-Player-log-$stamp.txt', 'text': text});
-      if (path != null) return 'Saved to $path';
+      if (path != null) return tr('Saved to {p}', {'p': path});
     } catch (_) {}
-    return 'Could not share or save the log';
+    return tr('Could not share or save the log');
   }
 }

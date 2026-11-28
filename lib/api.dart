@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import 'models.dart';
+import 'l10n.dart';
 
 class PlaylistResult {
   PlaylistResult(this.categories, this.channels,
@@ -23,11 +24,11 @@ class ApiException implements Exception {
 }
 
 String describeError(Object e) {
-  if (e is TimeoutException) return 'The server did not respond in time';
-  if (e is SocketException) return 'Network error: ${e.message}';
-  if (e is http.ClientException) return 'Network error: ${e.message}';
+  if (e is TimeoutException) return tr('The server did not respond in time');
+  if (e is SocketException) return tr('Network error: {e}', {'e': e.message});
+  if (e is http.ClientException) return tr('Network error: {e}', {'e': e.message});
   if (e is ApiException) return e.message;
-  if (e is FormatException) return 'Invalid data: ${e.message}';
+  if (e is FormatException) return tr('Invalid data: {e}', {'e': e.message});
   final s = e.toString();
   return s.startsWith('Exception: ') ? s.substring(11) : s;
 }
@@ -53,12 +54,12 @@ Future<dynamic> _getJson(Uri uri, Map<String, String> headers) async {
       .get(uri, headers: headers)
       .timeout(const Duration(seconds: 60));
   if (r.statusCode != 200) {
-    throw ApiException('The server responded with HTTP ${r.statusCode}');
+    throw ApiException(tr('The server responded with HTTP {c}', {'c': r.statusCode}));
   }
   try {
     return jsonDecode(utf8.decode(r.bodyBytes, allowMalformed: true));
   } catch (_) {
-    throw ApiException('The server returned an invalid response');
+    throw ApiException(tr('The server returned an invalid response'));
   }
 }
 
@@ -77,7 +78,7 @@ Future<PlaylistResult> loadXtream(Profile p, String ua) async {
     final ui = info['user_info'];
     if (ui is Map) {
       if (_str(ui['auth']) == '0') {
-        throw ApiException('Login was rejected by the server');
+        throw ApiException(tr('Login was rejected by the server'));
       }
       final e = int.tryParse(_str(ui['exp_date']));
       if (e != null && e > 0) {
@@ -114,7 +115,7 @@ Future<PlaylistResult> loadXtream(Profile p, String ua) async {
       ));
     }
   }
-  if (channels.isEmpty) throw ApiException('No live channels were returned');
+  if (channels.isEmpty) throw ApiException(tr('No live channels were returned'));
   return PlaylistResult(categories, channels, expDate: exp);
 }
 
@@ -123,11 +124,11 @@ Future<PlaylistResult> loadM3u(Profile p, String ua) async {
       .get(Uri.parse(p.m3uUrl.trim()), headers: _headers(ua))
       .timeout(const Duration(seconds: 120));
   if (r.statusCode != 200) {
-    throw ApiException('The server responded with HTTP ${r.statusCode}');
+    throw ApiException(tr('The server responded with HTTP {c}', {'c': r.statusCode}));
   }
   final result = parseM3u(utf8.decode(r.bodyBytes, allowMalformed: true));
   if (result.channels.isEmpty) {
-    throw ApiException('No live channels found in the playlist');
+    throw ApiException(tr('No live channels found in the playlist'));
   }
   return result;
 }
