@@ -90,6 +90,7 @@ const _da = <String, String>{
   '{n} min': '{n} min',
 
   'Say a channel name': 'Sig et kanalnavn',
+  'Type, or hold the mic on the keyboard to speak': 'Skriv, eller hold mikrofonen på tastaturet nede for at tale',
   'Search': 'Søg',
   'Search: {q}': 'Søg: {q}',
   'Voice search': 'Talesøgning',

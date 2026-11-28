@@ -424,27 +424,15 @@ class _TvHomeState extends State<TvHome> {
   /// Android input dialog. Results show as a list in the guide. If the voice
   /// search gives nothing back, pressing OK again within 10 s opens the
   /// keyboard instead.
-  DateTime? _voiceFailedAt;
 
   Future<void> _search() async {
-    String? text;
-    final typeNow = _voiceFailedAt != null &&
-        DateTime.now().difference(_voiceFailedAt!) < const Duration(seconds: 10);
-    _voiceFailedAt = null;
-    final voice = !typeNow && await Voice.available();
-    Diag.log('search: ${voice ? 'voice' : 'keyboard'}');
-    if (voice) {
-      text = await Voice.listen();
-      Diag.log('voice search: ${text == null ? 'no result' : '"$text"'}');
-      if (text == null || text.trim().isEmpty) {
-        _voiceFailedAt = DateTime.now();
-        if (mounted) _showToast(tr('Nothing heard. Press OK again to type'));
-        return;
-      }
-    } else {
-      text = await Voice.type(tr('Search channels or programmes'), _searchQuery);
-      Diag.log('typed search: ${text == null ? 'cancelled' : '"$text"'}');
-    }
+    // Like Nuvio and other TV apps: an ordinary Android text field. To speak,
+    // hold the microphone on the keyboard or remote; the TV keyboard (Gboard)
+    // writes what you say into the field. Our own speech call never got its
+    // answer back on Google TV.
+    var text = await Voice.type(tr('Search channels or programmes'), _searchQuery,
+        hint: tr('Type, or hold the mic on the keyboard to speak'));
+    Diag.log('search typed: ${text == null ? 'cancelled' : '"$text"'}');
     text = text?.trim();
     if (!mounted || text == null || text.isEmpty) return;
     setState(() {

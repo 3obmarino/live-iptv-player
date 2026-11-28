@@ -144,7 +144,8 @@ class MainActivity : FlutterActivity() {
                         call.argument<String>("label") ?: "",
                         call.argument<String>("text") ?: "",
                         call.argument<String>("kind") ?: "text",
-                        result
+                        result,
+                        call.argument<String>("hint") ?: ""
                     )
                     // Voice search with the device's speech recognizer (Google on
                     // phones and Google TV). Returns the text, or null.
@@ -238,7 +239,7 @@ class MainActivity : FlutterActivity() {
         null
     }
 
-    private fun editText(label: String, text: String, kind: String, result: MethodChannel.Result) {
+    private fun editText(label: String, text: String, kind: String, result: MethodChannel.Result, hint: String = "") {
         var answered = false
         fun answer(v: String?) {
             if (!answered) {
@@ -248,6 +249,7 @@ class MainActivity : FlutterActivity() {
         }
         val input = EditText(this).apply {
             setText(text)
+            if (hint.isNotEmpty()) setHint(hint)
             setSelection(text.length)
             isSingleLine = true
             imeOptions = (if (kind == "search") EditorInfo.IME_ACTION_SEARCH else EditorInfo.IME_ACTION_DONE) or

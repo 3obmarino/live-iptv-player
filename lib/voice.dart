@@ -37,10 +37,10 @@ class Voice {
   }
 
   /// Text entry fallback (native dialog on TV) for when voice isn't there.
-  static Future<String?> type(String label, [String text = '']) async {
+  static Future<String?> type(String label, String text, {String? hint}) async {
     try {
       return await _ch.invokeMethod<String>(
-          'editText', {'label': label, 'text': text, 'kind': 'search'});
+          'editText', {'label': label, 'text': text, 'kind': 'search', 'hint': hint ?? ''});
     } catch (_) {
       return null;
     }
