@@ -40,7 +40,7 @@ class Voice {
   static Future<String?> type(String label, [String text = '']) async {
     try {
       return await _ch.invokeMethod<String>(
-          'editText', {'label': label, 'text': text, 'kind': 'text'});
+          'editText', {'label': label, 'text': text, 'kind': 'search'});
     } catch (_) {
       return null;
     }

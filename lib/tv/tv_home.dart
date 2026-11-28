@@ -431,7 +431,9 @@ class _TvHomeState extends State<TvHome> {
     final typeNow = _voiceFailedAt != null &&
         DateTime.now().difference(_voiceFailedAt!) < const Duration(seconds: 10);
     _voiceFailedAt = null;
-    if (!typeNow && await Voice.available()) {
+    final voice = !typeNow && await Voice.available();
+    Diag.log('search: ${voice ? 'voice' : 'keyboard'}');
+    if (voice) {
       text = await Voice.listen();
       Diag.log('voice search: ${text == null ? 'no result' : '"$text"'}');
       if (text == null || text.trim().isEmpty) {
@@ -441,6 +443,7 @@ class _TvHomeState extends State<TvHome> {
       }
     } else {
       text = await Voice.type(tr('Search channels or programmes'), _searchQuery);
+      Diag.log('typed search: ${text == null ? 'cancelled' : '"$text"'}');
     }
     text = text?.trim();
     if (!mounted || text == null || text.isEmpty) return;

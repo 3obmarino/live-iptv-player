@@ -250,7 +250,8 @@ class MainActivity : FlutterActivity() {
             setText(text)
             setSelection(text.length)
             isSingleLine = true
-            imeOptions = EditorInfo.IME_ACTION_DONE or EditorInfo.IME_FLAG_NO_EXTRACT_UI
+            imeOptions = (if (kind == "search") EditorInfo.IME_ACTION_SEARCH else EditorInfo.IME_ACTION_DONE) or
+                EditorInfo.IME_FLAG_NO_EXTRACT_UI
             inputType = when (kind) {
                 "password" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
                 "url" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
@@ -270,8 +271,21 @@ class MainActivity : FlutterActivity() {
             .setOnCancelListener { answer(null) }
             .setOnDismissListener { answer(null) }
             .create()
-        input.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
+        // TV keyboards differ: some send IME_ACTION_DONE/SEARCH/GO, others
+        // just an Enter key. Treat any of them as "OK" so the text arrives.
+        input.setOnEditorActionListener { _, actionId, ev ->
+            val enter = ev?.keyCode == android.view.KeyEvent.KEYCODE_ENTER
+            if (enter && ev?.action != android.view.KeyEvent.ACTION_DOWN) return@setOnEditorActionListener true
+            if (actionId != EditorInfo.IME_ACTION_NONE || enter) {
+                answer(input.text.toString())
+                dlg.dismiss()
+                true
+            } else false
+        }
+        input.setOnKeyListener { _, keyCode, ev ->
+            if (ev.action == android.view.KeyEvent.ACTION_UP &&
+                (keyCode == android.view.KeyEvent.KEYCODE_ENTER ||
+                 keyCode == android.view.KeyEvent.KEYCODE_NUMPAD_ENTER)) {
                 answer(input.text.toString())
                 dlg.dismiss()
                 true
