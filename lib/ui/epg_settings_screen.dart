@@ -143,7 +143,7 @@ class _EpgSettingsScreenState extends State<EpgSettingsScreen> {
                 style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
               ),
               const SizedBox(height: 12),
-              TextField(controller: _url, enabled: p != null),
+              AppTextField(controller: _url, enabled: p != null),
               const SizedBox(height: 12),
               Row(children: [
                 Expanded(

@@ -268,24 +268,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   onSelectionChanged: (v) => setState(() => _type = v.first),
                 ),
                 const SizedBox(height: 24),
-                TextField(
+                AppTextField(
                     controller: _name,
                     textInputAction: TextInputAction.next,
                     decoration: dec('Name', 'e.g. Home')),
                 const SizedBox(height: 14),
                 if (xt) ...[
-                  TextField(
+                  AppTextField(
                       controller: _server,
                       keyboardType: TextInputType.url,
                       textInputAction: TextInputAction.next,
                       decoration: dec('Server URL', 'http://example.com:8080')),
                   const SizedBox(height: 14),
-                  TextField(
+                  AppTextField(
                       controller: _user,
                       textInputAction: TextInputAction.next,
                       decoration: dec('Username')),
                   const SizedBox(height: 14),
-                  TextField(
+                  AppTextField(
                     controller: _pass,
                     obscureText: _hidePass,
                     textInputAction: TextInputAction.done,
@@ -298,7 +298,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                 ] else
-                  TextField(
+                  AppTextField(
                       controller: _m3u,
                       keyboardType: TextInputType.url,
                       textInputAction: TextInputAction.done,

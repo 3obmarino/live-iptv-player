@@ -62,7 +62,7 @@ class _PlayerSettingsScreenState extends State<PlayerSettingsScreen> {
               Text('Only needed if your provider requires a specific one. Empty = default.',
                   style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
               const SizedBox(height: 12),
-              TextField(controller: _ua),
+              AppTextField(controller: _ua),
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerRight,

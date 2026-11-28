@@ -154,7 +154,7 @@ class UpdateBar extends StatelessWidget {
 
 /// Remote control keys around text fields (TV build).
 /// - On-screen keyboard closed: ▲/▼ move between fields (a text field would
-///   otherwise keep those keys), OK opens the keyboard.
+///   otherwise keep those keys). Typing happens in AppTextField's editor.
 /// - On-screen keyboard open: the arrow keys and OK are left to the keyboard,
 ///   so you can move around in it. (Flutter sees keys before the keyboard
 ///   does; keys it doesn't handle go on to the keyboard.)
@@ -189,13 +189,6 @@ class _TvKeysState extends State<TvKeys> {
     if (_kbOpen) {
       // Not ours: let the on-screen keyboard have it.
       return KeyEventResult.skipRemainingHandlers;
-    }
-    final ok = e.logicalKey == LogicalKeyboardKey.select ||
-        e.logicalKey == LogicalKeyboardKey.enter ||
-        e.logicalKey == LogicalKeyboardKey.numpadEnter;
-    if (ok) {
-      if (e is KeyDownEvent) SystemChannels.textInput.invokeMethod<void>('TextInput.show');
-      return KeyEventResult.handled;
     }
     return KeyEventResult.ignored; // ▲/▼ go to the Shortcuts below
   }

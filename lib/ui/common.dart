@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app_state.dart';
 import '../logo_cache.dart';
@@ -350,3 +351,185 @@ void showChannelGuide(BuildContext context, Channel c, {VoidCallback? onWatch}) 
 
 /// Phone-sized layout (Pixel 7 portrait is ~412 dp wide).
 bool isCompact(BuildContext context) => MediaQuery.sizeOf(context).width < 720;
+
+/// A text field that works with a TV remote.
+///
+/// On a phone or PC it is a normal TextField. On TV the field itself only
+/// shows the value: ▲/▼ move past it and OK opens a small editor with the
+/// on-screen keyboard. Inside the editor every remote key goes to the
+/// keyboard (the app no longer takes ▲/▼ to jump to the next field), the
+/// keyboard's →| / Done key saves, and Back saves and closes.
+class AppTextField extends StatelessWidget {
+  const AppTextField({
+    super.key,
+    required this.controller,
+    this.decoration = const InputDecoration(),
+    this.keyboardType,
+    this.textInputAction,
+    this.obscureText = false,
+    this.onSubmitted,
+    this.onChanged,
+    this.autofocus = false,
+    this.enabled = true,
+  });
+  final TextEditingController controller;
+  final InputDecoration decoration;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final bool obscureText;
+  final ValueChanged<String>? onSubmitted;
+  final ValueChanged<String>? onChanged;
+  final bool autofocus;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!kTvBuild) {
+      return TextField(
+        controller: controller,
+        decoration: decoration,
+        keyboardType: keyboardType,
+        textInputAction: textInputAction,
+        obscureText: obscureText,
+        onSubmitted: onSubmitted,
+        onChanged: onChanged,
+        autofocus: autofocus,
+        enabled: enabled,
+      );
+    }
+    return Focus(
+      skipTraversal: true,
+      canRequestFocus: false,
+      onKeyEvent: (node, e) {
+        final ok = e.logicalKey == LogicalKeyboardKey.select ||
+            e.logicalKey == LogicalKeyboardKey.enter ||
+            e.logicalKey == LogicalKeyboardKey.numpadEnter;
+        if (!ok) return KeyEventResult.ignored;
+        if (e is KeyUpEvent && enabled) _edit(context);
+        return KeyEventResult.handled;
+      },
+      child: TextField(
+        controller: controller,
+        decoration: decoration,
+        obscureText: obscureText,
+        readOnly: true, // no keyboard just because the field got focus
+        showCursor: false,
+        enableInteractiveSelection: false,
+        autofocus: autofocus,
+        enabled: enabled,
+        onTap: () => _edit(context),
+      ),
+    );
+  }
+
+  Future<void> _edit(BuildContext context) async {
+    final value = await showDialog<String>(
+      context: context,
+      builder: (_) => _TvEditDialog(
+        label: decoration.labelText ?? decoration.hintText ?? '',
+        hint: decoration.hintText,
+        initial: controller.text,
+        keyboardType: keyboardType,
+        obscureText: obscureText,
+      ),
+    );
+    if (value == null || !context.mounted) return;
+    if (value != controller.text) {
+      controller.text = value;
+      onChanged?.call(value);
+    }
+    if (textInputAction == TextInputAction.next) {
+      FocusScope.of(context).nextFocus();
+    } else if (textInputAction == TextInputAction.done || textInputAction == TextInputAction.go) {
+      onSubmitted?.call(value);
+    }
+  }
+}
+
+class _TvEditDialog extends StatefulWidget {
+  const _TvEditDialog(
+      {required this.label,
+      required this.initial,
+      this.hint,
+      this.keyboardType,
+      this.obscureText = false});
+  final String label;
+  final String? hint;
+  final String initial;
+  final TextInputType? keyboardType;
+  final bool obscureText;
+  @override
+  State<_TvEditDialog> createState() => _TvEditDialogState();
+}
+
+class _TvEditDialogState extends State<_TvEditDialog> {
+  late final _ctl = TextEditingController(text: widget.initial);
+  late bool _hide = widget.obscureText;
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
+
+  static final _keyboardKeys = {
+    LogicalKeyboardKey.arrowUp,
+    LogicalKeyboardKey.arrowDown,
+    LogicalKeyboardKey.arrowLeft,
+    LogicalKeyboardKey.arrowRight,
+    LogicalKeyboardKey.select,
+    LogicalKeyboardKey.enter,
+    LogicalKeyboardKey.numpadEnter,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      // Back (after the keyboard is closed) keeps what was typed.
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) Navigator.of(context).pop(_ctl.text);
+      },
+      child: Dialog(
+        alignment: Alignment.topCenter,
+        insetPadding: const EdgeInsets.fromLTRB(80, 48, 80, 48),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(28, 24, 28, 22),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(widget.label, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
+            Focus(
+              skipTraversal: true,
+              canRequestFocus: false,
+              // Every remote key goes on to the on-screen keyboard. OK also
+              // reopens the keyboard if it was closed with Back.
+              onKeyEvent: (node, e) {
+                if (!_keyboardKeys.contains(e.logicalKey)) return KeyEventResult.ignored;
+                final ok = e.logicalKey == LogicalKeyboardKey.select ||
+                    e.logicalKey == LogicalKeyboardKey.enter ||
+                    e.logicalKey == LogicalKeyboardKey.numpadEnter;
+                if (ok && e is KeyDownEvent) {
+                  SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+                }
+                return KeyEventResult.skipRemainingHandlers;
+              },
+              child: TextField(
+                controller: _ctl,
+                autofocus: true,
+                obscureText: _hide,
+                keyboardType: widget.keyboardType,
+                textInputAction: TextInputAction.done,
+                style: const TextStyle(fontSize: 22),
+                decoration: InputDecoration(hintText: widget.hint),
+                onSubmitted: (v) => Navigator.of(context).pop(v),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text('Press →| on the keyboard when done. Back also saves.',
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
